@@ -21,24 +21,20 @@
   a{color:var(--blue);text-decoration:none}
   .wrap{max-width:1280px;margin:0 auto;padding:0 24px}
 
-  /* ============ HERO ============ */
+  /* ============ HERO (compact) ============ */
   header.site{background:
-      radial-gradient(1100px 500px at 80% -10%, rgba(240,168,50,.22), transparent 60%),
+      radial-gradient(1100px 500px at 80% -10%, rgba(240,168,50,.18), transparent 60%),
       linear-gradient(160deg,var(--blue-dark) 0%,var(--navy) 100%);
-    color:#fff;padding:84px 0 76px;text-align:center}
-  header.site .brand{font-size:1.15rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600}
-  header.site h1{font-size:clamp(2.6rem,6vw,4.4rem);line-height:1.08;margin:.3em auto .3em;max-width:1000px;font-weight:700}
-  header.site h1 em{font-style:normal;color:var(--gold)}
-  header.site p{max-width:760px;margin:0 auto 2em;font-size:clamp(1.15rem,2vw,1.45rem);opacity:.92}
+    color:#fff;padding:44px 0 40px;text-align:center}
+  header.site .brand{font-size:1rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  header.site h1{font-size:clamp(1.9rem,3.6vw,2.8rem);line-height:1.15;margin:.35em auto .35em;max-width:900px;font-weight:700}
+  header.site p{max-width:720px;margin:0 auto 1.3em;font-size:clamp(1rem,1.6vw,1.15rem);opacity:.9}
   .cta{display:inline-block;background:var(--gold);color:#231a05;font-weight:700;
-    padding:18px 38px;border-radius:12px;font-size:1.25rem;box-shadow:0 8px 26px rgba(240,168,50,.35);
+    padding:13px 26px;border-radius:10px;font-size:1.05rem;box-shadow:0 6px 20px rgba(240,168,50,.3);
     transition:transform .12s ease, box-shadow .12s ease}
-  .cta:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(240,168,50,.45)}
-  .cta.secondary{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.55);box-shadow:none;margin-left:14px}
+  .cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(240,168,50,.4)}
+  .cta.secondary{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.55);box-shadow:none;margin-left:12px}
   .cta.secondary:hover{background:rgba(255,255,255,.12)}
-  .hero-badges{margin-top:34px;display:flex;gap:12px 34px;justify-content:center;flex-wrap:wrap;
-    font-size:1.05rem;opacity:.92}
-  .hero-badges span::before{content:"\2713  ";color:var(--gold);font-weight:700}
 
   /* ============ SECTIONS ============ */
   section{padding:76px 0}
@@ -120,22 +116,17 @@
 <header class="site">
   <div class="wrap">
     <div class="brand">Micah's Learning Resources</div>
-    <h1>Play the actual resources. <em>Right now. Free.</em></h1>
-    <p>These aren't previews or screenshots - the full interactive simulations, 3D games, investigation labs, and biographies below run right in your browser. Try them with your class, then grab hundreds more on Teachers Pay Teachers.</p>
-    <a class="cta" href="#play">Start playing &darr;</a><a class="cta secondary" href="https://www.teacherspayteachers.com/store/micahs-learning-resources" target="_blank" rel="noopener">Browse the full store &rarr;</a>
-    <div class="hero-badges">
-      <span>Full resources, not demos</span>
-      <span>No installs, no logins</span>
-      <span>Works on any device</span>
-    </div>
+    <h1>Interactive resources built for digital, self-paced learning.</h1>
+    <p>Simulations, investigation labs, and map explorers that let students learn by doing - on any device, with no installs, no logins, and no prep. Try the full resources below, then find hundreds more in the store.</p>
+    <a class="cta" href="#resources">Explore the resources &darr;</a><a class="cta secondary" href="https://www.teacherspayteachers.com/store/micahs-learning-resources" target="_blank" rel="noopener">Visit the store &rarr;</a>
   </div>
 </header>
 
-<section id="play">
+<section id="resources">
   <div class="wrap">
     <div class="sec-head">
       <h2>Featured interactive resources</h2>
-      <p>Click any resource to play the complete version, free. Love it? Get your own copy - plus answer keys, teacher guides, and printables - on TPT.</p>
+      <p>Open any resource to use the complete version in your browser. Want your own copy - with answer keys, teacher guides, and printables? It's on TPT.</p>
     </div>
     <div class="grid" id="featured-grid"></div>
   </div>
@@ -175,15 +166,15 @@
 document.getElementById('featured-grid').innerHTML = CATALOG.map(p => `
   <article class="card">
     <a class="thumb-link" href="play.html?p=${p.slug}">
-      <img class="thumb" src="assets/${p.slug}.png" alt="${p.title}" loading="lazy">
-      <span class="playhint"><span>&#9654;&nbsp; Play it now</span></span>
+      <img class="thumb" src="assets/${p.img}" alt="${p.title}" loading="lazy">
+      <span class="playhint"><span>Open the resource &rarr;</span></span>
     </a>
     <div class="body">
       <span class="tag">${p.tag}</span>
       <h3>${p.title}</h3>
       <p>${p.blurb}</p>
       <div class="btn-row">
-        <a class="btn play" href="play.html?p=${p.slug}">&#9654;&nbsp; Play free</a>
+        <a class="btn play" href="play.html?p=${p.slug}">Try it now</a>
         <a class="btn tpt" href="${p.tpt}" target="_blank" rel="noopener">Get it on TPT</a>
       </div>
     </div>
@@ -201,7 +192,7 @@ document.getElementById('free-grid').innerHTML = FREEMAPS.map(p => `
   <article class="fcard">
     <h3>${p.title}</h3>
     <p>${p.blurb}</p>
-    <a href="play.html?p=${p.slug}">&#9654; Play the map &rarr;</a>
+    <a href="play.html?p=${p.slug}">Open the map &rarr;</a>
   </article>`).join('');
 </script>
 </body>

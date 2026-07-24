@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>California State History: From Gold Rush to Silicon Valley | Interactive Learning Lab</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary-navy: #003087;
+            --accent-gold: #ffd700;
+            --success-green: #27ae60;
+            --primary: #003087;
+            --secondary: #e67e22;
+            --accent: #ffd700;
+            --success: #27ae60;
+        }
+        body {
+            background: #f0f2f5;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding-bottom: 120px;
+        
+            height: 100vh !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+        
+            height: 100vh !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .navbar {
+            background: var(--primary-navy);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .nav-tabs {
+            border-bottom: 3px solid var(--secondary);
+            margin-bottom: 20px;
+            background: white;
+            padding-top: 10px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: var(--secondary);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+        }
+        #map {
+            height: 550px;
+            border-radius: 0 0 8px 8px;
+            z-index: 1;
+        }
+
+        /* Map Controls & Filters */
+        .map-controls {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .map-filter-btn {
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin: 3px;
+        }
+        .map-filter-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .map-filter-btn.active {
+            box-shadow: 0 0 0 3px rgba(0, 48, 135, 0.2);
+        }
+        .map-filter-btn[data-type="all"] { background: var(--primary-navy); color: white; }
+        .map-filter-btn[data-type="mission"] { background: #8B4513; color: white; }
+        .map-filter-btn[data-type="gold"] { background: #DAA520; color: #333; }
+        .map-filter-btn[data-type="military"] { background: #1e3a5f; color: white; }
+        .map-filter-btn[data-type="modern"] { background: #27ae60; color: white; }
+        .map-filter-btn[data-type="cultural"] { background: #9b59b6; color: white; }
+        .map-filter-btn[data-type="natural"] { background: #16a085; color: white; }
+
+        /* Map Legend */
+        .map-legend {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            font-size: 0.8rem;
+            max-width: 180px;
+        }
+        .map-legend h6 {
+            margin-bottom: 10px;
+            font-weight: 700;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .legend-dot.mission { background: #8B4513; }
+        .legend-dot.gold { background: #DAA520; }
+        .legend-dot.military { background: #1e3a5f; }
+        .legend-dot.modern { background: #27ae60; }
+        .legend-dot.cultural { background: #9b59b6; }
+        .legend-dot.natural { background: #16a085; }
+
+        /* Custom Leaflet Popup */
+        .leaflet-popup-content-wrapper {
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .leaflet-popup-content {
+            margin: 12px 16px;
+            min-width: 220px;
+            max-width: 280px;
+        }
+        .site-popup { line-height: 1.5; }
+        .site-popup-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eee;
+        }
+        .site-popup-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            color: white;
+            font-size: 1rem;
+        }
+        .site-popup-icon.mission { background: #8B4513; }
+        .site-popup-icon.gold { background: #DAA520; color: #333; }
+        .site-popup-icon.military { background: #1e3a5f; }
+        .site-popup-icon.modern { background: #27ae60; }
+        .site-popup-icon.cultural { background: #9b59b6; }
+        .site-popup-icon.natural { background: #16a085; }
+        .site-popup h5 { margin: 0; font-size: 1rem; color: var(--primary-navy); }
+        .site-popup-era { font-size: 0.75rem; color: #666; display: block; }
+        .site-popup-info { font-size: 0.9rem; color: #444; }
+        .site-popup-type {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 8px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .site-popup-type.mission { background: #f3e5d3; color: #8B4513; }
+        .site-popup-type.gold { background: #fef3d0; color: #806c00; }
+        .site-popup-type.military { background: #d6e3f0; color: #1e3a5f; }
+        .site-popup-type.modern { background: #d4edda; color: #155724; }
+        .site-popup-type.cultural { background: #e8d6f0; color: #6b2d8a; }
+        .site-popup-type.natural { background: #d1f2eb; color: #0e6655; }
+
+        /* Map Stats Bar */
+        .map-stats {
+            background: linear-gradient(135deg, var(--primary-navy), #001a4d);
+            color: white;
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 0 8px 8px;
+        }
+        .map-stats-item { display: flex; align-items: center; }
+        .map-stats-item i { margin-right: 6px; opacity: 0.8; }
+
+        /* Quiz enhancements */
+        .quiz-category-badge {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .missed-review-card {
+            border-left: 4px solid #dc3545;
+            margin-bottom: 10px;
+        }
+        .timeline-event {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 5px;
+            cursor: move;
+        }
+        .timeline-container {
+            min-height: 200px;
+            border: 3px dashed #999;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f9f9f9;
+        }
+        .event-pool {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px dashed #ccc;
+            padding: 10px;
+        }
+        .document-text {
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary);
+            padding: 20px;
+            margin: 20px 0;
+            line-height: 2;
+        }
+        .document-blank {
+            display: inline-block;
+            min-width: 150px;
+            border-bottom: 2px solid var(--primary);
+            margin: 0 5px;
+            padding: 5px;
+            background: #fff3cd;
+            cursor: pointer;
+        }
+        .word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .word-option {
+            padding: 10px 15px;
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .word-option.used {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .print-btn {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+        }
+        footer {
+            background: var(--primary-navy);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        .worksheet {
+            display: none;
+        }
+        .timeline-event.correct {
+            border-color: var(--success-green) !important;
+            background: #d4edda !important;
+        }
+        .timeline-event.incorrect {
+            border-color: #dc3545 !important;
+            background: #f8d7da !important;
+        }
+        .blank-slot {
+            display: inline-block;
+            min-width: 120px;
+            border-bottom: 2px solid var(--primary);
+            margin: 0 5px;
+            padding: 5px 10px;
+            background: #fff3cd;
+            cursor: pointer;
+            text-align: center;
+        }
+        .blank-slot:hover {
+            background: #ffe69c;
+        }
+        .blank-slot.selected {
+            background: #cce5ff;
+            border-color: #0066cc;
+        }
+        .blank-slot.filled {
+            background: #d4edda;
+        }
+        @media print {
+            /* Hide everything on the page */
+            body > *:not(#worksheet-content) {
+                display: none !important;
+            }
+            /* Show only the worksheet */
+            #worksheet-content {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 20px !important;
+            }
+            body {
+            background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 12pt;
+            
+            height: 100vh !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+        
+            height: 100vh !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+            .worksheet-section {
+                page-break-inside: avoid;
+                margin-bottom: 15px;
+            }
+            h2 {
+                page-break-after: avoid;
+                margin-top: 20px;
+            }
+            .answer-key {
+                page-break-before: always;
+            }
+        }
+    
+        .tab-pane.active .row { flex: 1 !important; min-height: 0 !important; overflow: hidden !important; }
+        .col-lg-8, .col-lg-4 { height: 100% !important; display: flex !important; flex-direction: column !important; min-height: 0 !important; }
+        .question-card, .sidebar-panel, .lesson-section {
+            overflow-y: auto !important; flex: 1 !important; min-height: 0 !important; 
+            flex: 1 !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            padding: 25px !important;
+            position: relative !important;
+        }
+        
+        /* Custom Scrollbar for Navy Template */
+        .question-card::-webkit-scrollbar, .sidebar-panel::-webkit-scrollbar, .lesson-section::-webkit-scrollbar { width: 6px; }
+        .question-card::-webkit-scrollbar-track, .sidebar-panel::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        .question-card::-webkit-scrollbar-thumb, .sidebar-panel::-webkit-scrollbar-thumb { background: var(--primary-navy); border-radius: 10px; }
+        </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="#"><i class="fas fa-gem me-2"></i> California State History</a>
+        <span class="navbar-text text-white-50 d-none d-md-block">Interactive Learning Resource</span>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <button class="btn btn-success print-btn" onclick="generateWorksheet()">
+        <i class="fas fa-print me-2"></i>Print Worksheet
+    </button>
+
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#theory"><i class="fas fa-book-open me-2"></i>Theory</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#process"><i class="fas fa-map me-2"></i>Map</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#lab"><i class="fas fa-calendar me-2"></i>Timeline</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#quiz"><i class="fas fa-file-alt me-2"></i>Documents & Quiz</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link text-success" data-bs-toggle="tab" data-bs-target="#teacher"><i class="fas fa-apple-alt me-2"></i>Teacher HQ</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="theory">
+            <div class="accordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#c1">The Gold Rush Explosion (1848-1855)</button>
+                    </h2>
+                    <div id="c1" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <p>On January 24, 1848, <strong>James W. Marshall</strong> discovered gold at <strong>Sutter's Mill</strong> in Coloma, California. This discovery triggered one of the largest migrations in American history and transformed California from a sparsely populated Mexican territory into a state almost overnight.</p>
+                            <h6 class="mt-3">The Discovery</h6>
+                            <p>Marshall was building a sawmill for John Sutter when he noticed shiny flakes in the millrace. The discovery was initially kept secret, but word spread quickly. By May 1848, San Francisco newspapers reported the find, and by August, the news reached the East Coast, triggering mass migration.</p>
+                            <h6 class="mt-3">The Forty-Niners</h6>
+                            <p>In 1849, over 80,000 people rushed to California seeking gold. These "Forty-Niners" came from around the world: the United States, Mexico, China, Australia, Europe, and South America. They traveled by ship around Cape Horn, across the Isthmus of Panama, or overland on treacherous trails like the California Trail and the Gila Trail.</p>
+                            <h6 class="mt-3">Population Explosion</h6>
+                            <p>California's population exploded from about 14,000 in 1848 to over 100,000 by 1850. San Francisco grew from a small village to a major city almost overnight. The rapid growth created chaos: lawlessness, high prices, and environmental destruction as miners used hydraulic mining techniques that devastated landscapes.</p>
+                            <h6 class="mt-3">Path to Statehood</h6>
+                            <p>The Gold Rush created such rapid population growth that California skipped the territorial phase entirely. In 1849, Californians wrote a state constitution and applied directly for statehood. On September 9, 1850, California became the <strong>31st state</strong>—the fastest path to statehood in U.S. history, achieved in just two years.</p>
+                            <h6 class="mt-3">Economic Impact</h6>
+                            <p>The Gold Rush transformed California's economy and made it a major economic power. While most individual miners found little gold, merchants, bankers, and entrepreneurs made fortunes supplying the miners. The gold rush also stimulated agriculture, shipping, and manufacturing, establishing California as an economic powerhouse that continues today.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c2">The Spanish Mission System (1769-1834)</button>
+                    </h2>
+                    <div id="c2" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <p>Beginning in 1769, Spanish Franciscan missionaries established 21 missions along the California coast from San Diego to Sonoma. These missions were part of Spain's strategy to colonize Alta California, convert Native Americans to Christianity, and establish a Spanish presence to counter Russian and British claims.</p>
+                            <h6 class="mt-3">The Mission Chain</h6>
+                            <p>Father <strong>Junípero Serra</strong> founded the first mission at San Diego in 1769. Over the next 54 years, 20 more missions were established, each about a day's journey apart along <strong>El Camino Real</strong> (The Royal Road). The missions served as religious centers, agricultural communities, and military outposts.</p>
+                            <h6 class="mt-3">Mission Life</h6>
+                            <p>Native Americans were brought to missions to be converted and "civilized." They were taught European farming, crafts, and religion, but lost their traditional ways of life. Many died from European diseases to which they had no immunity. The missions also used forced labor, with Native Americans working to support the mission economy.</p>
+                            <h6 class="mt-3">Economic System</h6>
+                            <p>The missions became self-sufficient agricultural communities, producing crops, livestock, and goods. They introduced European agriculture, including wheat, grapes, olives, and cattle, which transformed California's landscape and economy. The mission system established the foundation for California's later agricultural success.</p>
+                            <h6 class="mt-3">Secularization</h6>
+                            <p>In 1834, after Mexico gained independence from Spain, the Mexican government secularized the missions, taking them away from the church and distributing the land. This ended the mission system but left a lasting cultural and architectural legacy. Many mission buildings still stand today as historic landmarks and tourist attractions.</p>
+                            <h6 class="mt-3">Cultural Legacy</h6>
+                            <p>The missions left a lasting impact on California: Spanish place names, mission architecture, agricultural practices, and a mixed-race population (mestizos) that became the foundation of California's diverse population. The mission system also established the pattern of Spanish/Mexican land grants that would shape California's development.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c3">Mexican California & The Bear Flag Republic (1821-1848)</button>
+                    </h2>
+                    <div id="c3" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <p>After Mexico gained independence from Spain in 1821, California became part of Mexico. The Mexican period (1821-1848) saw the secularization of missions, the growth of ranchos (large land grants), and increasing American settlement. By the 1840s, tensions were growing between Mexican authorities and American settlers.</p>
+                            <h6 class="mt-3">The Bear Flag Revolt</h6>
+                            <p>In June 1846, American settlers in California, fearing Mexican authority, declared independence and raised the <strong>Bear Flag</strong> in Sonoma. They declared the "California Republic" and chose William B. Ide as president. However, the republic lasted only 25 days before U.S. forces arrived and claimed California for the United States during the Mexican-American War.</p>
+                            <h6 class="mt-3">Mexican-American War</h6>
+                            <p>The Mexican-American War (1846-1848) was already underway when the Bear Flag Revolt occurred. U.S. forces quickly took control of California, and the <strong>Treaty of Guadalupe Hidalgo</strong> (1848) officially ceded California to the United States. The war ended just days before gold was discovered, setting the stage for the Gold Rush.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c4">The Transcontinental Railroad & Growth (1860s-1900)</button>
+                    </h2>
+                    <div id="c4" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <p>The completion of the <strong>First Transcontinental Railroad</strong> in 1869 connected California to the rest of the United States, transforming the state's economy and population. The railroad made travel faster, cheaper, and safer, leading to massive population growth and economic development.</p>
+                            <h6 class="mt-3">Chinese Labor</h6>
+                            <p>The Central Pacific Railroad, building from California eastward, employed thousands of Chinese immigrants to do the dangerous work of blasting tunnels through the Sierra Nevada mountains. These workers faced discrimination, dangerous conditions, and lower pay than white workers, but their labor was essential to completing the railroad.</p>
+                            <h6 class="mt-3">Economic Boom</h6>
+                            <p>The railroad enabled California's agricultural products to reach eastern markets, making farming highly profitable. It also brought tourists, settlers, and investment, fueling rapid growth. Cities like Los Angeles and San Francisco expanded dramatically, and new industries developed.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c5">The 1906 Earthquake & Rebuilding</button>
+                    </h2>
+                    <div id="c5" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <p>On April 18, 1906, a massive earthquake struck San Francisco, one of the most destructive natural disasters in American history. The earthquake, estimated at 7.8 magnitude, and the fires that followed destroyed much of the city, leaving over 3,000 people dead and 200,000 homeless.</p>
+                            <h6 class="mt-3">The Disaster</h6>
+                            <p>The earthquake ruptured the <strong>San Andreas Fault</strong>, causing violent shaking that lasted up to a minute. But the fires that followed were even more destructive. Broken gas lines and water mains made firefighting nearly impossible, and fires burned for three days, destroying over 28,000 buildings across 500 city blocks.</p>
+                            <h6 class="mt-3">The Rebuilding</h6>
+                            <p>Despite the devastation, San Francisco rebuilt quickly and emerged stronger. The rebuilding effort created new jobs, attracted investment, and led to improved building codes and earthquake preparedness. The disaster also demonstrated California's resilience and determination.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c6">Hollywood & The Entertainment Industry (1910s-present)</button>
+                    </h2>
+                    <div id="c6" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <p>In the 1910s, filmmakers moved to California to escape Thomas Edison's film patents and take advantage of the state's year-round sunshine and diverse landscapes. <strong>Hollywood</strong> became the center of the American film industry, creating a new form of entertainment that would shape global culture.</p>
+                            <h6 class="mt-3">The Birth of Hollywood</h6>
+                            <p>Hollywood transformed from a small agricultural community into the entertainment capital of the world. The film industry created thousands of jobs, attracted talent from around the world, and made California a center of creativity and innovation. Movies became a major export, spreading American culture globally.</p>
+                            <h6 class="mt-3">Cultural Impact</h6>
+                            <p>Hollywood films shaped American and global culture, influencing fashion, language, values, and aspirations. The entertainment industry also expanded to include television, music, and digital media, making California a global center for creative industries.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c7">World War II & Japanese Internment</button>
+                    </h2>
+                    <div id="c7" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <p>During World War II, California became a major center of war production, with shipyards, aircraft factories, and military bases employing millions. However, the war also brought one of the darkest chapters in California and American history: the forced internment of Japanese Americans.</p>
+                            <h6 class="mt-3">Executive Order 9066</h6>
+                            <p>In February 1942, President Franklin D. Roosevelt signed <strong>Executive Order 9066</strong>, authorizing the forced removal of over 120,000 Japanese Americans (two-thirds of whom were U.S. citizens) from their homes to internment camps. California had the largest Japanese American population, and most were sent to camps in remote locations.</p>
+                            <h6 class="mt-3">The Camps</h6>
+                            <p>Japanese Americans were forced to abandon their homes, businesses, and possessions. They were held in camps surrounded by barbed wire and guard towers, despite no evidence of disloyalty. The internment violated their constitutional rights and caused lasting trauma and economic losses.</p>
+                            <h6 class="mt-3">Legacy</h6>
+                            <p>In 1988, the U.S. government formally apologized and provided reparations to surviving internees. The internment remains a reminder of the dangers of wartime hysteria and racial discrimination, and it continues to shape discussions about civil liberties and immigrant rights.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#c8">Silicon Valley & The Tech Revolution (1950s-present)</button>
+                    </h2>
+                    <div id="c8" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <p>Beginning in the 1950s, the area south of San Francisco, known as <strong>Silicon Valley</strong>, became the global center of technology innovation. The region's transformation from agricultural land to tech hub has shaped the modern world and made California a leader in the digital economy.</p>
+                            <h6 class="mt-3">The Birth of Silicon Valley</h6>
+                            <p>Stanford University and nearby companies like Hewlett-Packard and Fairchild Semiconductor created an ecosystem of innovation. The development of the silicon chip (which gave the region its name), personal computers, the internet, and smartphones all had major roots in Silicon Valley.</p>
+                            <h6 class="mt-3">Tech Giants</h6>
+                            <p>Companies like Apple, Google, Facebook (Meta), and thousands of startups have made Silicon Valley synonymous with innovation and entrepreneurship. The region attracts talent and investment from around the world, creating immense wealth and transforming how people live, work, and communicate.</p>
+                            <h6 class="mt-3">California as "America's Future"</h6>
+                            <p>California has long been seen as a trendsetter, where new ideas, technologies, and cultural movements begin before spreading nationwide. From the Gold Rush to Hollywood to Silicon Valley, California has consistently been at the forefront of American innovation and change, earning its reputation as "America's future."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="process">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-map me-2"></i> California Historical Sites & Landmarks</span>
+                    <span id="map-count" class="badge bg-light text-dark">48 locations</span>
+                </div>
+                <div class="map-controls">
+                    <div class="d-flex flex-wrap align-items-center">
+                        <span class="me-2 fw-bold text-muted small">FILTER BY ERA:</span>
+                        <button class="map-filter-btn active" data-type="all" onclick="filterMap('all')">
+                            <i class="fas fa-globe me-1"></i> All Sites
+                        </button>
+                        <button class="map-filter-btn" data-type="mission" onclick="filterMap('mission')">
+                            <i class="fas fa-cross me-1"></i> Missions
+                        </button>
+                        <button class="map-filter-btn" data-type="gold" onclick="filterMap('gold')">
+                            <i class="fas fa-gem me-1"></i> Gold Rush
+                        </button>
+                        <button class="map-filter-btn" data-type="military" onclick="filterMap('military')">
+                            <i class="fas fa-fort-awesome me-1"></i> Military
+                        </button>
+                        <button class="map-filter-btn" data-type="modern" onclick="filterMap('modern')">
+                            <i class="fas fa-microchip me-1"></i> Modern Era
+                        </button>
+                        <button class="map-filter-btn" data-type="cultural" onclick="filterMap('cultural')">
+                            <i class="fas fa-film me-1"></i> Cultural
+                        </button>
+                        <button class="map-filter-btn" data-type="natural" onclick="filterMap('natural')">
+                            <i class="fas fa-mountain me-1"></i> Natural
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0 position-relative">
+                    <div id="map"></div>
+                </div>
+                <div class="map-stats">
+                    <div class="map-stats-item">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Click markers to explore • Zoom to discover more</span>
+                    </div>
+                    <div class="map-stats-item">
+                        <span id="filtered-count">Showing: <strong>48</strong> of 48 sites</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="lab">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-calendar me-2"></i> California History Timeline</div>
+                <div class="card-body">
+                    <p>Drag events onto the timeline in chronological order:</p>
+                    <div class="row">
+                        <div class="col-md-5">
+                            <h5>Historical Events:</h5>
+                            <div class="event-pool" id="event-pool"></div>
+                        </div>
+                        <div class="col-md-7">
+                            <h5>Timeline:</h5>
+                            <div class="timeline-container" id="timeline-container"></div>
+                            <button class="btn btn-primary mt-3" onclick="checkTimeline()">Check Order</button>
+                            <div id="timeline-results" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="quiz">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-file-alt me-2"></i> Document Decoder</div>
+                        <div class="card-body">
+                            <select class="form-select mb-3" id="document-select" onchange="loadDocument()">
+                                <option value="">Select a document...</option>
+                                <option value="0">Gold Rush Account (1848)</option>
+                                <option value="1">California Statehood (1850)</option>
+                                <option value="2">San Francisco Earthquake Report (1906)</option>
+                                <option value="3">Spanish Mission System (1769-1834)</option>
+                                <option value="4">Silicon Valley Origins (1950s)</option>
+                            </select>
+                            <div id="document-display"></div>
+                            <div id="word-bank-container" class="mt-3" style="display:none;">
+                                <h5>Word Bank:</h5>
+                                <div class="word-bank" id="word-bank"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-3">
+                                <div><strong>Lives:</strong> <span id="decoder-lives">❤️❤️❤️❤️❤️</span></div>
+                                <div><strong>Score:</strong> <span id="decoder-score">0</span></div>
+                            </div>
+                            <button class="btn btn-primary mt-3" onclick="checkDocument()">Check Answers</button>
+                            <div id="decoder-feedback" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-check-circle me-2"></i> California History Quiz</div>
+                        <div class="card-body">
+                            <div id="quiz-start" class="text-center py-4">
+                                <i class="fas fa-scroll fa-4x mb-3" style="color: var(--primary-navy);"></i>
+                                <h3>California Mastery Quiz</h3>
+                                <p class="text-muted">20 questions from a bank of 40+</p>
+                                <button class="btn btn-primary btn-lg" onclick="startQuiz()">
+                                    <i class="fas fa-play me-2"></i>Begin Quiz
+                                </button>
+                            </div>
+                            <div id="quiz-play" style="display:none;">
+                                <div class="progress mb-3" style="height: 25px;">
+                                    <div class="progress-bar" id="quiz-progress" style="width:0%; background: var(--primary-navy);">0 / 20</div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span id="quiz-number" class="text-muted">Question 1 of 20</span>
+                                    <span id="quiz-category" class="badge bg-secondary">Category</span>
+                                </div>
+                                <h5 id="q-text" class="mb-3"></h5>
+                                <div id="q-options" class="d-grid gap-2"></div>
+                                <div id="feedback" class="alert mt-3" style="display:none;"></div>
+                                <button id="next-btn" class="btn btn-primary w-100 mt-3" onclick="nextQuestion()" style="display:none;">
+                                    Next Question <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                            <div id="quiz-end" class="text-center py-4" style="display:none;">
+                                <div id="quiz-final-icon" class="fs-1 mb-3"></div>
+                                <h3 id="quiz-score-text"></h3>
+                                <p id="quiz-final-stats" class="text-muted"></p>
+                                <div id="quiz-review" class="text-start mt-4" style="max-height: 300px; overflow-y: auto;"></div>
+                                <button class="btn btn-primary mt-3" onclick="startQuiz()">
+                                    <i class="fas fa-redo me-2"></i>Try Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="teacher">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-chalkboard-teacher me-2"></i> Teacher HQ: Educational Integration</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Learning Objectives</h5>
+                            <ul class="list-group list-group-flush mb-4">
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Understand how the Gold Rush transformed California from wilderness to statehood in just 2 years.</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Analyze the impact of the Spanish mission system on Native Americans and California's development.</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Examine California's role as a trendsetter in entertainment, technology, and culture.</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Understand the significance of major events like the 1906 earthquake and Japanese internment.</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Explore how California's geography and resources shaped its history.</li>
+                            </ul>
+                            
+                            <h5>Classroom Implementation Ideas</h5>
+                            <div class="accordion" id="accordTeacher">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#tCollOne">
+                                            1. Gold Rush Simulation
+                                        </button>
+                                    </h2>
+                                    <div id="tCollOne" class="accordion-collapse collapse show" data-bs-parent="#accordTeacher">
+                                        <div class="accordion-body">
+                                            Have students research the different routes to California during the Gold Rush. Create a simulation where students must choose routes, supplies, and strategies, experiencing the challenges Forty-Niners faced. Use the Map tab to trace actual routes.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tCollTwo">
+                                            2. Mission Trail Project
+                                        </button>
+                                    </h2>
+                                    <div id="tCollTwo" class="accordion-collapse collapse" data-bs-parent="#accordTeacher">
+                                        <div class="accordion-body">
+                                            Use the Map tab to explore the mission trail. Have students research individual missions and create presentations on their history, architecture, and impact. Discuss the positive and negative aspects of the mission system.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tCollThree">
+                                            3. California Timeline Analysis
+                                        </button>
+                                    </h2>
+                                    <div id="tCollThree" class="accordion-collapse collapse" data-bs-parent="#accordTeacher">
+                                        <div class="accordion-body">
+                                            Use the Timeline Builder to sequence events. Then have students identify turning points and explain how each major event (Gold Rush, Railroad, Earthquake, Hollywood, Silicon Valley) transformed California and influenced the rest of America.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 border-start">
+                            <h5>Activity Timeline</h5>
+                            <table class="table table-bordered table-sm mb-4">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Activity</th>
+                                        <th>Resources</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>10 min</td>
+                                        <td><strong>Introduction:</strong> Overview of California history themes</td>
+                                        <td>Theory Tab</td>
+                                    </tr>
+                                    <tr>
+                                        <td>15 min</td>
+                                        <td><strong>Explore:</strong> Interactive map exploration of missions, gold sites, and fault lines</td>
+                                        <td>Map Tab</td>
+                                    </tr>
+                                    <tr>
+                                        <td>15 min</td>
+                                        <td><strong>Sequence:</strong> Timeline builder activity - ordering historical events</td>
+                                        <td>Timeline Tab</td>
+                                    </tr>
+                                    <tr>
+                                        <td>15 min</td>
+                                        <td><strong>Analyze:</strong> Document decoder with primary source excerpts</td>
+                                        <td>Documents Tab</td>
+                                    </tr>
+                                    <tr>
+                                        <td>10 min</td>
+                                        <td><strong>Assess:</strong> Knowledge check quiz</td>
+                                        <td>Quiz Section</td>
+                                    </tr>
+                                    <tr>
+                                        <td>5 min</td>
+                                        <td><strong>Wrap-up:</strong> Discussion and worksheet distribution</td>
+                                        <td>Print Worksheet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <h5>Common Core Standards Alignment</h5>
+                            <div class="mb-4">
+                                <span class="badge bg-secondary mb-2">CCSS.ELA-LITERACY.RH.6-8.2</span>
+                                <p class="small text-muted">Determine the central ideas or information of a primary or secondary source; provide an accurate summary.</p>
+
+                                <span class="badge bg-secondary mb-2">CCSS.ELA-LITERACY.RH.6-8.7</span>
+                                <p class="small text-muted">Integrate visual information (e.g., in charts, graphs, photographs, videos, or maps) with other information.</p>
+
+                                <span class="badge bg-secondary mb-2">NCSS Theme 2</span>
+                                <p class="small text-muted">Time, Continuity, and Change: Understanding how historical events shaped California's unique identity as "America's future."</p>
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-print me-2"></i>Preparation Note:</h6>
+                                <p class="small mb-0">The "Print Worksheet" button generates a comprehensive assessment covering missions, Gold Rush, statehood, earthquake, Hollywood, and Silicon Valley. Includes an answer key on a separate page for teacher use.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="worksheet" id="worksheet-content"></div>
+
+<footer>Educational Learning Resource</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // --- HISTORICAL SITES DATA ---
+    const historicalSites = [
+        // Spanish Missions (1769-1823)
+        { name: "Mission San Diego de Alcala", lat: 32.784, lng: -117.106, type: "mission", era: "Founded 1769", info: "The first of California's 21 missions, founded by Father Junípero Serra. Known as the 'Mother of the Missions.'" },
+        { name: "Mission San Juan Capistrano", lat: 33.502, lng: -117.662, type: "mission", era: "Founded 1776", info: "Famous for its swallows that return every year. Features the oldest building still in use in California." },
+        { name: "Mission San Gabriel Arcangel", lat: 34.099, lng: -118.106, type: "mission", era: "Founded 1771", info: "One of the most prosperous missions, known for its extensive vineyards and wine production." },
+        { name: "Mission Santa Barbara", lat: 34.438, lng: -119.714, type: "mission", era: "Founded 1786", info: "Called the 'Queen of the Missions' for its beautiful architecture. The only mission to remain under Franciscan control." },
+        { name: "Mission San Luis Obispo", lat: 35.280, lng: -120.664, type: "mission", era: "Founded 1772", info: "Introduced the red tile roof design that became iconic in California architecture." },
+        { name: "Mission San Carlos Borromeo", lat: 36.543, lng: -121.920, type: "mission", era: "Founded 1770", info: "Father Serra's headquarters and final resting place. Features beautiful Moorish architecture." },
+        { name: "Mission Santa Clara de Asis", lat: 37.352, lng: -121.951, type: "mission", era: "Founded 1777", info: "Now part of Santa Clara University, the oldest institution of higher learning in California." },
+        { name: "Mission San Francisco de Asis", lat: 37.760, lng: -122.427, type: "mission", era: "Founded 1776", info: "The oldest building in San Francisco, surviving the 1906 earthquake. Also called Mission Dolores." },
+        { name: "Mission San Jose", lat: 37.530, lng: -121.918, type: "mission", era: "Founded 1797", info: "Once the most prosperous mission in the chain, known for its large Native American population." },
+        { name: "Mission San Francisco Solano", lat: 38.293, lng: -122.457, type: "mission", era: "Founded 1823", info: "The last and northernmost mission, marking the end of El Camino Real. Built during Mexican rule." },
+
+        // Gold Rush Sites (1848-1855)
+        { name: "Sutter's Mill, Coloma", lat: 38.802, lng: -120.890, type: "gold", era: "1848", info: "Where James W. Marshall discovered gold on January 24, 1848, triggering the California Gold Rush." },
+        { name: "Sacramento", lat: 38.582, lng: -121.494, type: "gold", era: "1848-Present", info: "Major supply center for miners, grew rapidly to become California's capital city in 1854." },
+        { name: "Placerville (Hangtown)", lat: 38.731, lng: -120.798, type: "gold", era: "1848", info: "One of the richest mining towns. Originally called 'Hangtown' due to its rough vigilante justice." },
+        { name: "Nevada City", lat: 39.262, lng: -121.016, type: "gold", era: "1849", info: "One of the most successful gold mining towns, now a well-preserved Victorian-era historic district." },
+        { name: "Grass Valley", lat: 39.220, lng: -121.060, type: "gold", era: "1849", info: "Home to the Empire Mine which operated until 1956, one of the oldest and richest gold mines in California." },
+        { name: "Angels Camp", lat: 38.069, lng: -120.541, type: "gold", era: "1848", info: "Famous as the setting for Mark Twain's 'The Celebrated Jumping Frog of Calaveras County.'" },
+        { name: "Sonora", lat: 37.984, lng: -120.382, type: "gold", era: "1848", info: "Founded by Mexican miners from Sonora, Mexico. Known as the 'Queen of the Southern Mines.'" },
+        { name: "Columbia State Historic Park", lat: 38.034, lng: -120.401, type: "gold", era: "1850", info: "Preserved Gold Rush town where $87 million in gold was extracted. Now a living history museum." },
+
+        // Military & Historical Sites
+        { name: "Presidio of San Francisco", lat: 37.798, lng: -122.466, type: "military", era: "1776-1994", info: "Spanish military fort for 218 years. Now a national park with stunning Golden Gate views." },
+        { name: "Fort Point", lat: 37.811, lng: -122.477, type: "military", era: "1861", info: "Civil War-era fort beneath the Golden Gate Bridge. Never fired a shot in anger but guarded the bay." },
+        { name: "Alcatraz Island", lat: 37.827, lng: -122.423, type: "military", era: "1850s-1963", info: "Military fort, then infamous federal prison housing Al Capone. Now a national landmark and bird sanctuary." },
+        { name: "Manzanar", lat: 36.728, lng: -118.154, type: "military", era: "1942-1945", info: "Japanese American internment camp where over 10,000 people were held during WWII. Now a National Historic Site." },
+        { name: "Tule Lake", lat: 41.889, lng: -121.373, type: "military", era: "1942-1946", info: "Largest Japanese American internment camp, holding over 18,000 people at its peak." },
+        { name: "Fort Ross", lat: 38.514, lng: -123.244, type: "military", era: "1812-1841", info: "Russian fur trading outpost and the southernmost Russian settlement in North America." },
+        { name: "Benicia Arsenal", lat: 38.049, lng: -122.159, type: "military", era: "1851-1964", info: "Major U.S. Army ordnance depot that supplied military operations across the Pacific." },
+
+        // Modern Era & Technology
+        { name: "Silicon Valley (Palo Alto)", lat: 37.442, lng: -122.143, type: "modern", era: "1950s-Present", info: "Birthplace of the tech revolution. Home to Stanford University and countless tech startups." },
+        { name: "HP Garage (Birthplace of Silicon Valley)", lat: 37.443, lng: -122.157, type: "modern", era: "1939", info: "Where Hewlett and Packard started HP in 1939. California Historic Landmark #976." },
+        { name: "Apple Park", lat: 37.335, lng: -122.009, type: "modern", era: "2017", info: "Apple's headquarters designed by Norman Foster. The main building houses 12,000 employees." },
+        { name: "Googleplex", lat: 37.422, lng: -122.084, type: "modern", era: "2004-Present", info: "Google's global headquarters known for its colorful bikes, dinosaur skeleton, and innovative campus." },
+        { name: "Facebook HQ (Meta)", lat: 37.485, lng: -122.148, type: "modern", era: "2011-Present", info: "Meta's headquarters in Menlo Park. The famous 'thumbs up' sign marks the entrance." },
+        { name: "Intel Museum", lat: 37.388, lng: -121.963, type: "modern", era: "1968-Present", info: "Intel's headquarters in Santa Clara. The museum showcases the history of the silicon chip." },
+        { name: "Tesla Factory (Fremont)", lat: 37.493, lng: -121.944, type: "modern", era: "2010-Present", info: "Tesla's main vehicle manufacturing plant, formerly a GM/Toyota joint venture facility." },
+
+        // Cultural Sites
+        { name: "Hollywood Sign", lat: 34.134, lng: -118.322, type: "cultural", era: "1923", info: "Iconic landmark originally read 'Hollywoodland.' Symbol of the American entertainment industry." },
+        { name: "Grauman's Chinese Theatre", lat: 34.102, lng: -118.341, type: "cultural", era: "1927", info: "Historic movie palace famous for celebrity handprints and footprints in cement." },
+        { name: "Walt Disney Studios", lat: 34.158, lng: -118.326, type: "cultural", era: "1940", info: "Disney's main production studio in Burbank where animated classics were created." },
+        { name: "Universal Studios", lat: 34.138, lng: -118.353, type: "cultural", era: "1915", info: "One of the oldest and largest film studios. Now includes a major theme park." },
+        { name: "Hearst Castle", lat: 35.685, lng: -121.168, type: "cultural", era: "1919-1947", info: "William Randolph Hearst's extravagant estate with 165 rooms. Now a California State Park." },
+        { name: "Golden Gate Bridge", lat: 37.820, lng: -122.478, type: "cultural", era: "1937", info: "Iconic suspension bridge spanning San Francisco Bay. One of the most photographed landmarks in the world." },
+        { name: "Fisherman's Wharf", lat: 37.808, lng: -122.417, type: "cultural", era: "1900s-Present", info: "San Francisco's famous waterfront district known for seafood, sea lions, and tourism." },
+        { name: "Venice Beach Boardwalk", lat: 33.985, lng: -118.473, type: "cultural", era: "1905", info: "Eclectic beachfront promenade known for street performers, Muscle Beach, and bohemian culture." },
+
+        // Natural Landmarks
+        { name: "Yosemite Valley", lat: 37.746, lng: -119.588, type: "natural", era: "Protected 1864", info: "Iconic glacial valley with El Capitan and Half Dome. First wilderness area protected by the U.S. government." },
+        { name: "Death Valley", lat: 36.505, lng: -117.079, type: "natural", era: "Est. 1994", info: "Hottest place on Earth (134°F recorded). Below sea level and contains the lowest point in North America." },
+        { name: "Redwood National Park", lat: 41.213, lng: -124.005, type: "natural", era: "Est. 1968", info: "Home to the tallest trees on Earth, some over 350 feet tall and 2,000 years old." },
+        { name: "Lake Tahoe", lat: 39.096, lng: -120.032, type: "natural", era: "Natural", info: "North America's largest alpine lake, straddling California and Nevada. Known for crystal-clear water." },
+        { name: "Joshua Tree", lat: 33.873, lng: -115.901, type: "natural", era: "Est. 1994", info: "Where the Mojave and Colorado deserts meet. Named for the unique Joshua trees found here." },
+        { name: "Big Sur", lat: 36.238, lng: -121.804, type: "natural", era: "Natural", info: "Rugged stretch of coastline with dramatic cliffs and redwood forests. Highway 1 engineering marvel." },
+        { name: "Mount Shasta", lat: 41.409, lng: -122.195, type: "natural", era: "Natural", info: "14,179-foot stratovolcano sacred to Native Americans. Visible from 100 miles away." },
+        { name: "Sequoia National Park", lat: 36.486, lng: -118.565, type: "natural", era: "Est. 1890", info: "Home to General Sherman, the largest tree by volume on Earth. Second oldest national park." }
+    ];
+
+    // --- MAP CONFIGURATION ---
+    const mapConfig = {
+        colors: {
+            mission: '#8B4513',
+            gold: '#DAA520',
+            military: '#1e3a5f',
+            modern: '#27ae60',
+            cultural: '#9b59b6',
+            natural: '#16a085'
+        },
+        icons: {
+            mission: 'fa-cross',
+            gold: 'fa-gem',
+            military: 'fa-fort-awesome',
+            modern: 'fa-microchip',
+            cultural: 'fa-film',
+            natural: 'fa-mountain'
+        },
+        labels: {
+            mission: 'Spanish Mission',
+            gold: 'Gold Rush Era',
+            military: 'Military History',
+            modern: 'Modern Tech Era',
+            cultural: 'Cultural Landmark',
+            natural: 'Natural Wonder'
+        }
+    };
+
+    let markers = [];
+    let currentFilter = 'all';
+
+    const timelineEvents = [
+        { name: "Spanish Missions Begin", date: "1769", year: 1769, desc: "Father Junipero Serra founded the first mission at San Diego, starting the mission system that would establish 21 missions along the California coast." },
+        { name: "Mexico Gains Independence", date: "1821", year: 1821, desc: "Mexico won independence from Spain, and California became part of Mexico. This began the Mexican period of California history." },
+        { name: "Secularization of Missions", date: "1834", year: 1834, desc: "The Mexican government took the missions from the church and distributed the land, ending the mission system." },
+        { name: "Bear Flag Revolt", date: "1846", year: 1846, desc: "American settlers declared the short-lived California Republic, raising the Bear Flag in Sonoma before U.S. forces arrived." },
+        { name: "Treaty of Guadalupe Hidalgo", date: "1848", year: 1848, desc: "California was officially ceded to the United States after the Mexican-American War, just days before gold was discovered." },
+        { name: "Gold Discovered at Sutter's Mill", date: "January 24, 1848", year: 1848, desc: "James W. Marshall discovered gold at Sutter's Mill in Coloma, triggering the famous California Gold Rush." },
+        { name: "Gold Rush Peak", date: "1849", year: 1849, desc: "Over 80,000 'Forty-Niners' rushed to California seeking gold, transforming the territory almost overnight." },
+        { name: "California Statehood", date: "September 9, 1850", year: 1850, desc: "California became the 31st state, remarkably skipping the territorial phase due to rapid population growth." },
+        { name: "Transcontinental Railroad Completed", date: "1869", year: 1869, desc: "The railroad connected California to the rest of the United States, transforming trade and travel." },
+        { name: "Chinese Exclusion Act", date: "1882", year: 1882, desc: "Federal law restricting Chinese immigration, affecting many who had helped build the transcontinental railroad." },
+        { name: "San Francisco Earthquake", date: "April 18, 1906", year: 1906, desc: "A devastating 7.8 magnitude earthquake and resulting fires destroyed much of San Francisco, killing over 3,000 people." },
+        { name: "Hollywood Film Industry Emerges", date: "1910s", year: 1915, desc: "The film industry moved to California, making Hollywood the entertainment capital of the world." },
+        { name: "Japanese Internment", date: "1942", year: 1942, desc: "Executive Order 9066 forced over 120,000 Japanese Americans into internment camps during World War II." },
+        { name: "Silicon Valley Birth", date: "1950s", year: 1955, desc: "The technology industry began developing in the region south of San Francisco, launching the digital revolution." },
+        { name: "Free Speech Movement", date: "1964", year: 1964, desc: "UC Berkeley student protests became a model for civil rights activism and free speech advocacy nationwide." },
+        { name: "Apple Computer Founded", date: "1976", year: 1976, desc: "Steve Jobs and Steve Wozniak founded Apple in a Silicon Valley garage, revolutionizing personal computing." }
+    ];
+
+    const documents = [
+        {
+            title: "Gold Rush Account (1848)",
+            text: "Gold! [BLANK] at [BLANK]'s Mill in [BLANK]! Thousands of [BLANK] rush to California in 1849.",
+            blanks: [
+                { answer: "Discovered", position: 0 },
+                { answer: "Sutter", position: 1 },
+                { answer: "1848", position: 2 },
+                { answer: "Prospectors", position: 3 }
+            ],
+            distractors: ["Lost", "Marshall", "1850", "Soldiers"]
+        },
+        {
+            title: "California Statehood (1850)",
+            text: "California becomes the [BLANK] state in [BLANK]. From [BLANK] people to statehood in just [BLANK] years!",
+            blanks: [
+                { answer: "31st", position: 0 },
+                { answer: "1850", position: 1 },
+                { answer: "14,000", position: 2 },
+                { answer: "2", position: 3 }
+            ],
+            distractors: ["50th", "1848", "100,000", "10"]
+        },
+        {
+            title: "San Francisco Earthquake Report (1906)",
+            text: "The devastating [BLANK] earthquake of [BLANK] destroyed much of [BLANK]. The [BLANK] fault runs through California.",
+            blanks: [
+                { answer: "7.8 magnitude", position: 0 },
+                { answer: "1906", position: 1 },
+                { answer: "San Francisco", position: 2 },
+                { answer: "San Andreas", position: 3 }
+            ],
+            distractors: ["5.0 magnitude", "1900", "Los Angeles", "Pacific"]
+        },
+        {
+            title: "Spanish Mission System (1769-1834)",
+            text: "Father [BLANK] founded the first mission at [BLANK] in [BLANK]. The missions were connected by [BLANK].",
+            blanks: [
+                { answer: "Junipero Serra", position: 0 },
+                { answer: "San Diego", position: 1 },
+                { answer: "1769", position: 2 },
+                { answer: "El Camino Real", position: 3 }
+            ],
+            distractors: ["John Sutter", "San Francisco", "1821", "The Gold Trail"]
+        },
+        {
+            title: "Silicon Valley Origins (1950s)",
+            text: "The [BLANK] industry began in the area south of [BLANK]. Companies like [BLANK] were founded in Silicon Valley, named for the [BLANK] chip.",
+            blanks: [
+                { answer: "technology", position: 0 },
+                { answer: "San Francisco", position: 1 },
+                { answer: "Apple", position: 2 },
+                { answer: "silicon", position: 3 }
+            ],
+            distractors: ["film", "Los Angeles", "Disney", "gold"]
+        }
+    ];
+
+    const quizData = [
+        // Gold Rush (Category: Gold Rush)
+        { q: "When was gold discovered in California?", a: ["1848", "1850", "1849", "1821"], correct: 0, info: "Gold was discovered at Sutter's Mill on January 24, 1848, by James W. Marshall.", category: "Gold Rush" },
+        { q: "What were the gold seekers of 1849 called?", a: ["Forty-Niners", "Gold Diggers", "Rush Miners", "Prospectors"], correct: 0, info: "The gold seekers who came to California in 1849 were called 'Forty-Niners' after the year of the major rush.", category: "Gold Rush" },
+        { q: "Who discovered gold at Sutter's Mill?", a: ["James W. Marshall", "John Sutter", "James K. Polk", "John C. Frémont"], correct: 0, info: "James W. Marshall discovered gold while building a sawmill for John Sutter on January 24, 1848.", category: "Gold Rush" },
+        { q: "What was California's population before the Gold Rush?", a: ["About 14,000", "100,000", "1 million", "500"], correct: 0, info: "California had about 14,000 non-Native people in 1848, which exploded to over 100,000 by 1850.", category: "Gold Rush" },
+        { q: "What town was originally called 'Hangtown'?", a: ["Placerville", "Sacramento", "San Francisco", "Angels Camp"], correct: 0, info: "Placerville was originally called 'Hangtown' due to its rough vigilante justice during the Gold Rush.", category: "Gold Rush" },
+        { q: "Which Gold Rush town is famous for Mark Twain's 'Jumping Frog' story?", a: ["Angels Camp", "Nevada City", "Grass Valley", "Sonora"], correct: 0, info: "Angels Camp is the setting for Mark Twain's famous short story 'The Celebrated Jumping Frog of Calaveras County.'", category: "Gold Rush" },
+        { q: "What mining technique caused significant environmental damage?", a: ["Hydraulic mining", "Panning", "Sluice boxes", "Pick and shovel"], correct: 0, info: "Hydraulic mining used high-pressure water jets to wash away hillsides, causing massive environmental destruction.", category: "Gold Rush" },
+        { q: "Where was gold first discovered in California?", a: ["Coloma (Sutter's Mill)", "Sacramento", "San Francisco", "Los Angeles"], correct: 0, info: "Gold was first discovered at Sutter's Mill in Coloma, in the foothills of the Sierra Nevada.", category: "Gold Rush" },
+
+        // Spanish Missions (Category: Missions)
+        { q: "When was the first Spanish mission founded in California?", a: ["1769", "1821", "1848", "1850"], correct: 0, info: "The first Spanish mission was founded at San Diego in 1769 by Father Junípero Serra.", category: "Missions" },
+        { q: "Who founded the first California mission?", a: ["Father Junípero Serra", "Father Fermín Lasuén", "John Sutter", "Juan Bautista de Anza"], correct: 0, info: "Father Junípero Serra founded Mission San Diego de Alcala in 1769, beginning the mission system.", category: "Missions" },
+        { q: "What was El Camino Real?", a: ["The road connecting 21 missions", "A gold mine", "A river", "A mountain pass"], correct: 0, info: "El Camino Real ('The Royal Road') connected all 21 Spanish missions from San Diego to Sonoma.", category: "Missions" },
+        { q: "How many Spanish missions were built in California?", a: ["21", "15", "30", "12"], correct: 0, info: "21 Spanish missions were established along the California coast between 1769 and 1823.", category: "Missions" },
+        { q: "Which mission is called the 'Queen of the Missions'?", a: ["Mission Santa Barbara", "Mission San Diego", "Mission Dolores", "Mission San Juan Capistrano"], correct: 0, info: "Mission Santa Barbara is called the 'Queen of the Missions' for its beautiful architecture.", category: "Missions" },
+        { q: "What happened to the missions in 1834?", a: ["They were secularized by Mexico", "They were destroyed", "They expanded", "Gold was found"], correct: 0, info: "In 1834, the Mexican government secularized the missions, taking them from the church and distributing the land.", category: "Missions" },
+        { q: "Which mission is famous for swallows returning each year?", a: ["Mission San Juan Capistrano", "Mission Santa Barbara", "Mission Dolores", "Mission San Diego"], correct: 0, info: "Mission San Juan Capistrano is famous for the swallows that traditionally return every year on St. Joseph's Day.", category: "Missions" },
+        { q: "What was the northernmost mission in California?", a: ["Mission San Francisco Solano", "Mission San Rafael", "Mission Dolores", "Mission San Jose"], correct: 0, info: "Mission San Francisco Solano in Sonoma was the last and northernmost mission, built in 1823.", category: "Missions" },
+
+        // Statehood & Government (Category: Statehood)
+        { q: "When did California become a state?", a: ["1850", "1848", "1849", "1821"], correct: 0, info: "California became the 31st state on September 9, 1850, just two years after gold was discovered.", category: "Statehood" },
+        { q: "What number state was California?", a: ["31st", "50th", "21st", "1st"], correct: 0, info: "California was admitted as the 31st state of the United States on September 9, 1850.", category: "Statehood" },
+        { q: "How quickly did California achieve statehood after gold discovery?", a: ["2 years", "10 years", "5 years", "1 year"], correct: 0, info: "California went from gold discovery in 1848 to statehood in 1850—the fastest path to statehood in U.S. history.", category: "Statehood" },
+        { q: "What was the Bear Flag Revolt?", a: ["1846 declaration of California Republic", "A Native American uprising", "A labor strike", "A tax protest"], correct: 0, info: "In 1846, American settlers declared the short-lived California Republic and raised the Bear Flag in Sonoma.", category: "Statehood" },
+        { q: "What treaty gave California to the United States?", a: ["Treaty of Guadalupe Hidalgo", "Treaty of Paris", "Louisiana Purchase", "Gadsden Purchase"], correct: 0, info: "The Treaty of Guadalupe Hidalgo (1848) ended the Mexican-American War and ceded California to the U.S.", category: "Statehood" },
+        { q: "What year did Mexico gain independence from Spain?", a: ["1821", "1769", "1848", "1850"], correct: 0, info: "Mexico gained independence from Spain in 1821, and California became part of Mexico until 1848.", category: "Statehood" },
+
+        // Earthquake & Disaster (Category: Disasters)
+        { q: "What magnitude was the 1906 San Francisco earthquake?", a: ["7.8", "5.0", "6.0", "9.0"], correct: 0, info: "The 1906 San Francisco earthquake was estimated at 7.8 magnitude on the Richter scale.", category: "Disasters" },
+        { q: "What caused most destruction in the 1906 disaster?", a: ["The fires that followed", "The earthquake shaking", "A tsunami", "Building collapses"], correct: 0, info: "While the earthquake was devastating, the fires that burned for three days caused most of the destruction.", category: "Disasters" },
+        { q: "What is the San Andreas Fault?", a: ["A major earthquake fault line", "A gold mining region", "A river valley", "A mission trail"], correct: 0, info: "The San Andreas Fault is a 750-mile transform fault running through California, where two tectonic plates meet.", category: "Disasters" },
+        { q: "How many people died in the 1906 San Francisco disaster?", a: ["Over 3,000", "About 100", "500", "10,000"], correct: 0, info: "Over 3,000 people died in the 1906 earthquake and fires, though some estimates suggest higher numbers.", category: "Disasters" },
+
+        // Transportation (Category: Transportation)
+        { q: "When was the transcontinental railroad completed?", a: ["1869", "1850", "1848", "1906"], correct: 0, info: "The First Transcontinental Railroad was completed on May 10, 1869, at Promontory Summit, Utah.", category: "Transportation" },
+        { q: "Which immigrant group was crucial in building the Central Pacific Railroad?", a: ["Chinese immigrants", "Irish immigrants", "German immigrants", "Italian immigrants"], correct: 0, info: "Chinese immigrants made up 90% of Central Pacific's workforce, doing dangerous work through the Sierra Nevada.", category: "Transportation" },
+        { q: "What pass was the most challenging for the railroad?", a: ["Donner Pass", "Tehachapi Pass", "Cajon Pass", "Altamont Pass"], correct: 0, info: "Donner Pass required 15 tunnels blasted through solid granite, making it the most challenging section.", category: "Transportation" },
+        { q: "How did the railroad change travel time to California?", a: ["From months to about a week", "From weeks to days", "From years to months", "No significant change"], correct: 0, info: "The railroad reduced cross-country travel from several months to about one week.", category: "Transportation" },
+
+        // WWII & Internment (Category: WWII)
+        { q: "What Executive Order authorized Japanese internment?", a: ["Executive Order 9066", "Executive Order 1942", "Executive Order 8802", "Executive Order 9981"], correct: 0, info: "Executive Order 9066, signed in February 1942, authorized the forced removal of Japanese Americans.", category: "WWII" },
+        { q: "How many Japanese Americans were interned during WWII?", a: ["Over 120,000", "About 10,000", "50,000", "1 million"], correct: 0, info: "Over 120,000 Japanese Americans were forcibly interned, two-thirds of whom were U.S. citizens.", category: "WWII" },
+        { q: "What California site was a major internment camp?", a: ["Manzanar", "Alcatraz", "Angel Island", "San Quentin"], correct: 0, info: "Manzanar, in the Owens Valley, held over 10,000 Japanese Americans and is now a National Historic Site.", category: "WWII" },
+        { q: "When did the U.S. government formally apologize for internment?", a: ["1988", "1945", "1960", "2001"], correct: 0, info: "In 1988, President Reagan signed the Civil Liberties Act, formally apologizing and providing reparations.", category: "WWII" },
+
+        // Technology (Category: Technology)
+        { q: "What is Silicon Valley?", a: ["Tech hub south of San Francisco", "A valley with silicon deposits", "A gold mining area", "A mission region"], correct: 0, info: "Silicon Valley is the region south of San Francisco that became the global center of technology innovation.", category: "Technology" },
+        { q: "When did Silicon Valley's tech industry begin developing?", a: ["1950s", "1990s", "1920s", "2000s"], correct: 0, info: "The technology industry began developing in the 1950s with companies like Hewlett-Packard and Fairchild Semiconductor.", category: "Technology" },
+        { q: "Where was Apple Computer founded?", a: ["A garage in Silicon Valley", "New York", "Seattle", "Texas"], correct: 0, info: "Apple was founded in 1976 in Steve Jobs' family garage in Los Altos, California.", category: "Technology" },
+        { q: "What is Silicon Valley named after?", a: ["The silicon chip", "A type of rock", "A founder's name", "A river"], correct: 0, info: "Silicon Valley is named after the silicon chip (integrated circuit), the foundation of modern computing.", category: "Technology" },
+        { q: "Which company started in a Palo Alto garage in 1939?", a: ["Hewlett-Packard", "Apple", "Google", "Intel"], correct: 0, info: "Hewlett-Packard was founded in a Palo Alto garage in 1939, considered the birthplace of Silicon Valley.", category: "Technology" },
+
+        // Culture & Entertainment (Category: Culture)
+        { q: "Why did filmmakers move to California in the 1910s?", a: ["To escape Edison's patents and use sunshine", "For gold", "For missions", "For the railroad"], correct: 0, info: "Filmmakers moved to escape Thomas Edison's film patents and take advantage of year-round sunshine.", category: "Culture" },
+        { q: "What year was the Hollywood Sign erected?", a: ["1923", "1910", "1950", "1900"], correct: 0, info: "The Hollywood Sign was erected in 1923, originally reading 'Hollywoodland' as a real estate advertisement.", category: "Culture" },
+        { q: "Why is California called 'America's future'?", a: ["Where trends and innovations start", "Largest population", "Oldest state", "Most gold"], correct: 0, info: "California is called 'America's future' because new trends, technologies, and cultural movements often begin there.", category: "Culture" },
+        { q: "What is Hearst Castle?", a: ["William Randolph Hearst's estate", "A Spanish mission", "A gold mining site", "A tech campus"], correct: 0, info: "Hearst Castle was the extravagant estate of newspaper magnate William Randolph Hearst, with 165 rooms.", category: "Culture" },
+
+        // Natural Features (Category: Geography)
+        { q: "What is the lowest point in North America?", a: ["Death Valley", "Grand Canyon", "Yosemite Valley", "San Francisco Bay"], correct: 0, info: "Badwater Basin in Death Valley, at 282 feet below sea level, is the lowest point in North America.", category: "Geography" },
+        { q: "What are the tallest trees on Earth?", a: ["Coast Redwoods", "Sequoias", "Oak trees", "Pine trees"], correct: 0, info: "Coast Redwoods in Northern California are the tallest trees on Earth, some over 350 feet tall.", category: "Geography" },
+        { q: "What is the largest tree by volume on Earth?", a: ["General Sherman (Sequoia)", "General Grant", "Hyperion", "Methuselah"], correct: 0, info: "General Sherman in Sequoia National Park is the largest tree by volume, at over 52,500 cubic feet.", category: "Geography" },
+        { q: "What is Lake Tahoe known for?", a: ["Crystal-clear water and alpine setting", "Gold deposits", "Hot springs", "Salt flats"], correct: 0, info: "Lake Tahoe is North America's largest alpine lake, famous for its crystal-clear water and mountain scenery.", category: "Geography" }
+    ];
+
+    let map = null;
+    let quizState = { current: 0, score: 0, questions: [], wrongAnswers: [] };
+    let decoderState = { lives: 5, score: 0, currentDoc: null, selectedBlanks: {} };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        initializeMap();
+        initializeTimeline();
+
+        // Fix map rendering when tab becomes visible
+        const mapTab = document.querySelector('button[data-bs-target="#process"]');
+        if (mapTab) {
+            mapTab.addEventListener('shown.bs.tab', () => {
+                if (map) {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                }
+            });
+        }
+    });
+
+    function initializeMap() {
+        map = L.map('map').setView([37.0, -120.0], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add all markers
+        historicalSites.forEach(site => {
+            const marker = createMarker(site);
+            markers.push({ marker, site });
+        });
+
+        // Add legend
+        addLegend();
+
+        // Update counts
+        updateMapCount();
+    }
+
+    function createMarker(site) {
+        const color = mapConfig.colors[site.type];
+        const icon = mapConfig.icons[site.type];
+
+        const marker = L.circleMarker([site.lat, site.lng], {
+            radius: 10,
+            fillColor: color,
+            color: '#fff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+        }).addTo(map);
+
+        const popupContent = `
+            <div class="site-popup">
+                <div class="site-popup-header">
+                    <div class="site-popup-icon ${site.type}">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div>
+                        <h5>${site.name}</h5>
+                        <span class="site-popup-era"><i class="far fa-clock me-1"></i>${site.era}</span>
+                    </div>
+                </div>
+                <p class="site-popup-info mb-2">${site.info}</p>
+                <span class="site-popup-type ${site.type}">${mapConfig.labels[site.type]}</span>
+            </div>
+        `;
+
+        marker.bindPopup(popupContent, { maxWidth: 300 });
+
+        marker.on('mouseover', function() {
+            this.setRadius(14);
+            this.setStyle({ weight: 3 });
+        });
+        marker.on('mouseout', function() {
+            this.setRadius(10);
+            this.setStyle({ weight: 2 });
+        });
+
+        return marker;
+    }
+
+    function filterMap(type) {
+        currentFilter = type;
+
+        document.querySelectorAll('.map-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.type === type) btn.classList.add('active');
+        });
+
+        let visibleCount = 0;
+        markers.forEach(({ marker, site }) => {
+            if (type === 'all' || site.type === type) {
+                marker.addTo(map);
+                visibleCount++;
+            } else {
+                map.removeLayer(marker);
+            }
+        });
+
+        document.getElementById('filtered-count').innerHTML =
+            `Showing: <strong>${visibleCount}</strong> of ${markers.length} sites`;
+
+        if (type !== 'all') {
+            const filtered = markers.filter(m => m.site.type === type);
+            if (filtered.length > 0) {
+                const bounds = L.latLngBounds(filtered.map(m => [m.site.lat, m.site.lng]));
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        } else {
+            map.setView([37.0, -120.0], 6);
+        }
+    }
+
+    function addLegend() {
+        const legend = L.control({ position: 'bottomright' });
+
+        legend.onAdd = function() {
+            const div = L.DomUtil.create('div', 'map-legend');
+            div.innerHTML = `
+                <h6><i class="fas fa-layer-group me-1"></i> Legend</h6>
+                <div class="legend-item">
+                    <div class="legend-dot mission"></div>
+                    <span>Spanish Missions</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot gold"></div>
+                    <span>Gold Rush Era</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot military"></div>
+                    <span>Military History</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot modern"></div>
+                    <span>Modern Tech</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot cultural"></div>
+                    <span>Cultural Sites</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot natural"></div>
+                    <span>Natural Wonders</span>
+                </div>
+            `;
+            return div;
+        };
+
+        legend.addTo(map);
+    }
+
+    function updateMapCount() {
+        const count = historicalSites.length;
+        document.getElementById('map-count').textContent = `${count} locations`;
+        document.getElementById('filtered-count').innerHTML =
+            `Showing: <strong>${count}</strong> of ${count} sites`;
+    }
+
+    function initializeTimeline() {
+        const pool = document.getElementById('event-pool');
+        const shuffled = [...timelineEvents].sort(() => Math.random() - 0.5);
+        shuffled.forEach((event, idx) => {
+            const div = document.createElement('div');
+            div.className = 'timeline-event';
+            div.innerHTML = `<strong>${event.name}</strong> (${event.date})<br><small class="text-muted">${event.desc}</small>`;
+            div.setAttribute('data-year', event.year);
+            div.setAttribute('data-name', event.name);
+            pool.appendChild(div);
+        });
+
+        const timeline = document.getElementById('timeline-container');
+        timeline.innerHTML = '<p class="text-muted">Drag events here in chronological order</p>';
+
+        new Sortable(timeline, {
+            group: 'timeline',
+            animation: 150,
+            onAdd: function(evt) {
+                const eventName = evt.item.getAttribute('data-name');
+                const poolItem = pool.querySelector(`[data-name="${eventName}"]`);
+                if (poolItem && poolItem !== evt.item) {
+                    poolItem.remove();
+                }
+            }
+        });
+
+        new Sortable(pool, {
+            group: 'timeline',
+            animation: 150,
+            sort: false,
+            pull: true,
+            put: false
+        });
+    }
+
+    function checkTimeline() {
+        const timeline = document.getElementById('timeline-container');
+        const placed = Array.from(timeline.querySelectorAll('.timeline-event'));
+        const sorted = [...timelineEvents].sort((a, b) => a.year - b.year);
+        let correct = 0;
+
+        // Remove previous feedback classes
+        placed.forEach(item => {
+            item.classList.remove('correct', 'incorrect');
+        });
+
+        // Check each placed item
+        placed.forEach((item, idx) => {
+            const year = parseInt(item.getAttribute('data-year'));
+            const name = item.getAttribute('data-name');
+
+            // Find the correct position for this event
+            const correctIdx = sorted.findIndex(e => e.name === name);
+
+            // Check if it's in the right relative order
+            let isCorrect = true;
+            for (let i = 0; i < placed.length; i++) {
+                const otherYear = parseInt(placed[i].getAttribute('data-year'));
+                if (i < idx && otherYear > year) isCorrect = false;
+                if (i > idx && otherYear < year) isCorrect = false;
+            }
+
+            if (isCorrect) {
+                item.classList.add('correct');
+                correct++;
+            } else {
+                item.classList.add('incorrect');
+            }
+        });
+
+        const results = document.getElementById('timeline-results');
+        if (correct === placed.length && placed.length === timelineEvents.length) {
+            results.innerHTML = `<div class="alert alert-success"><strong>Perfect!</strong> All ${correct} events are in correct chronological order!</div>`;
+        } else if (correct === placed.length) {
+            results.innerHTML = `<div class="alert alert-info">Good work! ${correct} events are in correct order. Add more events from the pool to complete the timeline.</div>`;
+        } else {
+            results.innerHTML = `<div class="alert alert-warning">${correct} out of ${placed.length} events are in correct order. Events marked in red need to be moved.</div>`;
+        }
+    }
+
+    function loadDocument() {
+        const index = document.getElementById('document-select').value;
+        if (index === '' || isNaN(parseInt(index))) return;
+        const doc = documents[parseInt(index)];
+        decoderState.currentDoc = doc;
+        decoderState.selectedBlanks = {};
+        decoderState.selectedBlankIndex = null;
+        decoderState.lives = 5;
+        decoderState.score = 0;
+
+        // Create text with clickable blank slots
+        let blankIndex = 0;
+        let html = doc.text.replace(/\[BLANK\]/g, () => {
+            const idx = blankIndex++;
+            return `<span class="blank-slot" data-index="${idx}" onclick="selectBlank(${idx})">________</span>`;
+        });
+
+        const display = document.getElementById('document-display');
+        display.innerHTML = `<h5>${doc.title}</h5><div class="document-text">${html}</div>`;
+
+        // Create word bank with correct answers and distractors
+        const wordBank = [...doc.blanks.map(b => b.answer), ...doc.distractors];
+        const bank = document.getElementById('word-bank');
+        bank.innerHTML = '';
+
+        // Shuffle word bank
+        wordBank.sort(() => Math.random() - 0.5).forEach((word) => {
+            const div = document.createElement('div');
+            div.className = 'word-option';
+            div.textContent = word;
+            div.setAttribute('data-word', word);
+            div.onclick = () => selectWord(word, div);
+            bank.appendChild(div);
+        });
+
+        document.getElementById('word-bank-container').style.display = 'block';
+        document.getElementById('decoder-feedback').innerHTML = '';
+        updateDecoderDisplay();
+    }
+
+    function selectBlank(index) {
+        // Remove selection from all blanks
+        document.querySelectorAll('.blank-slot').forEach(slot => {
+            slot.classList.remove('selected');
+        });
+
+        // Select this blank
+        const slot = document.querySelector(`.blank-slot[data-index="${index}"]`);
+        if (slot) {
+            slot.classList.add('selected');
+            decoderState.selectedBlankIndex = index;
+        }
+    }
+
+    function selectWord(word, wordEl) {
+        if (wordEl.classList.contains('used')) return;
+        if (decoderState.selectedBlankIndex === null) {
+            document.getElementById('decoder-feedback').innerHTML = '<div class="alert alert-warning">Click on a blank in the document first, then select a word.</div>';
+            return;
+        }
+
+        const slot = document.querySelector(`.blank-slot[data-index="${decoderState.selectedBlankIndex}"]`);
+        if (slot) {
+            // If this slot already has a word, unmark the previous word
+            const previousWord = decoderState.selectedBlanks[decoderState.selectedBlankIndex];
+            if (previousWord) {
+                const prevWordEl = document.querySelector(`.word-option[data-word="${previousWord}"]`);
+                if (prevWordEl) prevWordEl.classList.remove('used');
+            }
+
+            // Fill the blank
+            slot.textContent = word;
+            slot.classList.remove('selected');
+            slot.classList.add('filled');
+            wordEl.classList.add('used');
+            decoderState.selectedBlanks[decoderState.selectedBlankIndex] = word;
+            decoderState.selectedBlankIndex = null;
+            document.getElementById('decoder-feedback').innerHTML = '';
+        }
+    }
+
+    function checkDocument() {
+        const doc = decoderState.currentDoc;
+        let correct = 0;
+        let total = doc.blanks.length;
+
+        // Check each blank
+        doc.blanks.forEach((blank, idx) => {
+            const slot = document.querySelector(`.blank-slot[data-index="${idx}"]`);
+            if (decoderState.selectedBlanks[idx] === blank.answer) {
+                correct++;
+                if (slot) {
+                    slot.style.background = '#d4edda';
+                    slot.style.borderColor = '#27ae60';
+                }
+            } else {
+                decoderState.lives = Math.max(0, decoderState.lives - 1);
+                if (slot) {
+                    slot.style.background = '#f8d7da';
+                    slot.style.borderColor = '#dc3545';
+                }
+            }
+        });
+
+        decoderState.score += correct * 100;
+        updateDecoderDisplay();
+
+        const feedback = document.getElementById('decoder-feedback');
+        if (correct === total) {
+            feedback.innerHTML = '<div class="alert alert-success"><strong>Perfect!</strong> All blanks filled correctly! Great job!</div>';
+        } else if (decoderState.lives <= 0) {
+            feedback.innerHTML = `<div class="alert alert-danger">Out of lives! You got ${correct} out of ${total} correct. The correct answers are shown below.</div>`;
+            // Show correct answers
+            doc.blanks.forEach((blank, idx) => {
+                const slot = document.querySelector(`.blank-slot[data-index="${idx}"]`);
+                if (slot && decoderState.selectedBlanks[idx] !== blank.answer) {
+                    slot.textContent = blank.answer;
+                    slot.style.background = '#cce5ff';
+                }
+            });
+        } else {
+            feedback.innerHTML = `<div class="alert alert-warning">You got ${correct} out of ${total} correct. You have ${decoderState.lives} lives remaining. Fix the red blanks and try again!</div>`;
+        }
+    }
+
+    function updateDecoderDisplay() {
+        const hearts = decoderState.lives > 0 ? '❤️'.repeat(decoderState.lives) : '💔';
+        document.getElementById('decoder-lives').textContent = hearts;
+        document.getElementById('decoder-score').textContent = decoderState.score;
+    }
+
+    function startQuiz() {
+        // Select 20 random questions from the bank
+        const shuffled = [...quizData].sort(() => Math.random() - 0.5);
+        quizState.questions = shuffled.slice(0, 20);
+        quizState.current = 0;
+        quizState.score = 0;
+        quizState.wrongAnswers = [];
+
+        document.getElementById('quiz-start').style.display = 'none';
+        document.getElementById('quiz-play').style.display = 'block';
+        document.getElementById('quiz-end').style.display = 'none';
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = quizState.questions[quizState.current];
+        const total = quizState.questions.length;
+
+        // Update question number and category
+        document.getElementById('quiz-number').textContent = `Question ${quizState.current + 1} of ${total}`;
+        document.getElementById('quiz-category').textContent = q.category;
+        document.getElementById('q-text').textContent = q.q;
+
+        // Update progress bar
+        const pct = (quizState.current / total) * 100;
+        const bar = document.getElementById('quiz-progress');
+        bar.style.width = pct + '%';
+        bar.textContent = `${quizState.current} / ${total}`;
+
+        // Shuffle answers while tracking correct answer
+        const correctAnswer = q.a[q.correct];
+        const shuffledAnswers = [...q.a].sort(() => Math.random() - 0.5);
+
+        const options = document.getElementById('q-options');
+        options.innerHTML = shuffledAnswers.map((opt) => `
+            <button class="btn btn-outline-primary w-100 text-start p-3 assessment-option"
+                    data-is-correct="${opt === correctAnswer}"
+                    data-answer="${opt}"
+                    onclick="selectAnswer(this)">${opt}</button>
+        `).join('');
+
+        document.getElementById('feedback').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function selectAnswer(btn) {
+        const q = quizState.questions[quizState.current];
+        const isCorrect = btn.getAttribute('data-is-correct') === 'true';
+        const selectedAnswer = btn.getAttribute('data-answer');
+        const correctAnswer = q.a[q.correct];
+
+        document.querySelectorAll('.assessment-option').forEach(b => {
+            b.disabled = true;
+            if (b.getAttribute('data-is-correct') === 'true') {
+                b.classList.remove('btn-outline-primary');
+                b.classList.add('btn-success', 'text-white');
+                b.innerHTML = '<i class="fas fa-check me-2"></i>' + b.textContent;
+            }
+        });
+
+        if (isCorrect) {
+            quizState.score++;
+        } else {
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-danger', 'text-white');
+            btn.innerHTML = '<i class="fas fa-times me-2"></i>' + selectedAnswer;
+
+            // Track wrong answer
+            quizState.wrongAnswers.push({
+                question: q.q,
+                yourAnswer: selectedAnswer,
+                correctAnswer: correctAnswer,
+                explanation: q.info,
+                category: q.category
+            });
+        }
+
+        const feedback = document.getElementById('feedback');
+        feedback.style.display = 'block';
+        feedback.className = 'alert mt-3';
+        feedback.classList.add(isCorrect ? 'alert-success' : 'alert-danger');
+        feedback.innerHTML = `<i class="fas ${isCorrect ? 'fa-check-circle' : 'fa-times-circle'} me-2"></i><strong>${isCorrect ? 'Correct!' : 'Incorrect.'}</strong> ${q.info}`;
+
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    function nextQuestion() {
+        quizState.current++;
+        if (quizState.current >= quizState.questions.length) {
+            showQuizResults();
+        } else {
+            showQuestion();
+        }
+    }
+
+    function showQuizResults() {
+        document.getElementById('quiz-play').style.display = 'none';
+        document.getElementById('quiz-end').style.display = 'block';
+
+        const total = quizState.questions.length;
+        const pct = Math.round((quizState.score / total) * 100);
+
+        // Update progress bar to 100%
+        const bar = document.getElementById('quiz-progress');
+        bar.style.width = '100%';
+        bar.textContent = `${total} / ${total}`;
+
+        document.getElementById('quiz-score-text').textContent = `You scored ${quizState.score} out of ${total} (${pct}%)`;
+
+        const icon = document.getElementById('quiz-final-icon');
+        const stats = document.getElementById('quiz-final-stats');
+
+        if (pct >= 90) {
+            icon.innerHTML = '<i class="fas fa-trophy text-warning"></i>';
+            stats.textContent = 'Outstanding! You really know California history!';
+        } else if (pct >= 70) {
+            icon.innerHTML = '<i class="fas fa-star text-success"></i>';
+            stats.textContent = 'Great job! Keep exploring the Golden State\'s history!';
+        } else if (pct >= 50) {
+            icon.innerHTML = '<i class="fas fa-thumbs-up text-info"></i>';
+            stats.textContent = 'Good effort! Review the material and try again.';
+        } else {
+            icon.innerHTML = '<i class="fas fa-book-open text-secondary"></i>';
+            stats.textContent = 'Keep studying! You\'ll get there.';
+        }
+
+        // Show missed questions review
+        const review = document.getElementById('quiz-review');
+        if (quizState.wrongAnswers.length > 0) {
+            review.innerHTML = `
+                <h5 class="mb-3"><i class="fas fa-clipboard-list me-2"></i>Review Missed Questions:</h5>
+                ${quizState.wrongAnswers.map((w, i) => `
+                    <div class="card mb-2 missed-review-card">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <strong class="small">${i + 1}. ${w.question}</strong>
+                                <span class="badge bg-secondary">${w.category}</span>
+                            </div>
+                            <p class="text-danger mb-1 small"><i class="fas fa-times me-1"></i>Your answer: ${w.yourAnswer}</p>
+                            <p class="text-success mb-1 small"><i class="fas fa-check me-1"></i>Correct: ${w.correctAnswer}</p>
+                            <p class="text-muted small mb-0">${w.explanation}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            review.innerHTML = '<p class="text-success"><i class="fas fa-star me-2"></i>Perfect score! No questions to review.</p>';
+        }
+    }
+
+    function generateWorksheet() {
+        const worksheet = document.getElementById('worksheet-content');
+        worksheet.innerHTML = `
+            <div class="worksheet-section">
+                <h1>California State History Worksheet</h1>
+                <p><strong>Name:</strong> <span style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;"></span> <strong>Date:</strong> <span style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;"></span></p>
+            </div>
+
+            <div class="worksheet-section">
+                <h2>Part 1: The Gold Rush</h2>
+                <p>1. When was gold discovered in California? <span style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;"></span></p>
+                <p>2. Who discovered gold at Sutter's Mill? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+                <p>3. What were the gold seekers called? <span style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;"></span></p>
+                <p>4. How fast did California go from 14,000 people to statehood? <span style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;"></span></p>
+            </div>
+
+            <div class="worksheet-section">
+                <h2>Part 2: Spanish Missions</h2>
+                <p>1. When was the first Spanish mission founded? <span style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;"></span></p>
+                <p>2. What was El Camino Real? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+                <p>3. What was the purpose of the Spanish missions? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+                <p>4. Who founded the first mission? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+            </div>
+
+            <div class="worksheet-section">
+                <h2>Part 3: Statehood & Growth</h2>
+                <p>1. When did California become a state? <span style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;"></span></p>
+                <p>2. What was the Bear Flag Revolt? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+                <p>3. When was the transcontinental railroad completed? <span style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;"></span></p>
+                <p>4. What treaty ceded California to the United States? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+            </div>
+
+            <div class="worksheet-section">
+                <h2>Part 4: Modern California</h2>
+                <p>1. What happened in San Francisco in 1906? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+                <p>2. What is the San Andreas Fault? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+                <p>3. Where did Hollywood start? <span style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;"></span></p>
+                <p>4. What happened to Japanese Americans during WWII? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+                <p>5. What is Silicon Valley? <span style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;"></span></p>
+            </div>
+
+            <div class="worksheet-section">
+                <h2>Part 5: Timeline</h2>
+                <p>Put these events in chronological order (number 1-8):</p>
+                <p>___ Gold Discovered at Sutter's Mill</p>
+                <p>___ California Statehood</p>
+                <p>___ Spanish Missions Begin</p>
+                <p>___ San Francisco Earthquake</p>
+                <p>___ Bear Flag Revolt</p>
+                <p>___ Transcontinental Railroad Completed</p>
+                <p>___ Japanese Internment</p>
+                <p>___ Silicon Valley Birth</p>
+            </div>
+
+            <div class="worksheet-section">
+                <h2>Part 6: Analysis Questions</h2>
+                <p>1. Why is California called "America's future"?</p>
+                <p style="border-bottom: 1px solid #ccc; min-height: 60px;"></p>
+                <p>2. How did the Gold Rush transform California?</p>
+                <p style="border-bottom: 1px solid #ccc; min-height: 60px;"></p>
+                <p>3. What were the positive and negative impacts of the Spanish mission system?</p>
+                <p style="border-bottom: 1px solid #ccc; min-height: 60px;"></p>
+            </div>
+
+            <div class="answer-key">
+                <h2>Answer Key (Teacher Copy)</h2>
+                <div class="worksheet-section">
+                    <h3>Part 1: The Gold Rush</h3>
+                    <p>1. <strong>1848</strong> (January 24, 1848)</p>
+                    <p>2. <strong>James W. Marshall</strong></p>
+                    <p>3. <strong>Forty-Niners</strong></p>
+                    <p>4. <strong>2 years</strong> (1848-1850)</p>
+                </div>
+                <div class="worksheet-section">
+                    <h3>Part 2: Spanish Missions</h3>
+                    <p>1. <strong>1769</strong></p>
+                    <p>2. <strong>The Royal Road connecting 21 Spanish missions</strong></p>
+                    <p>3. <strong>Convert Native Americans to Christianity and establish Spanish presence</strong></p>
+                    <p>4. <strong>Father Junipero Serra</strong></p>
+                </div>
+                <div class="worksheet-section">
+                    <h3>Part 3: Statehood & Growth</h3>
+                    <p>1. <strong>September 9, 1850</strong> (31st state)</p>
+                    <p>2. <strong>1846 declaration of California Republic by American settlers</strong></p>
+                    <p>3. <strong>1869</strong></p>
+                    <p>4. <strong>Treaty of Guadalupe Hidalgo (1848)</strong></p>
+                </div>
+                <div class="worksheet-section">
+                    <h3>Part 4: Modern California</h3>
+                    <p>1. <strong>Major 7.8 magnitude earthquake and fires</strong></p>
+                    <p>2. <strong>Major earthquake fault line running through California</strong></p>
+                    <p>3. <strong>California</strong></p>
+                    <p>4. <strong>Internment in camps under Executive Order 9066</strong></p>
+                    <p>5. <strong>Technology hub south of San Francisco</strong></p>
+                </div>
+                <div class="worksheet-section">
+                    <h3>Part 5: Timeline (Correct Order)</h3>
+                    <p>1. Spanish Missions Begin (1769)</p>
+                    <p>2. Bear Flag Revolt (1846)</p>
+                    <p>3. Gold Discovered at Sutter's Mill (1848)</p>
+                    <p>4. California Statehood (1850)</p>
+                    <p>5. Transcontinental Railroad Completed (1869)</p>
+                    <p>6. San Francisco Earthquake (1906)</p>
+                    <p>7. Japanese Internment (1942)</p>
+                    <p>8. Silicon Valley Birth (1950s)</p>
+                </div>
+            </div>
+        `;
+        setTimeout(() => {
+            window.print();
+        }, 100);
+    }
+</script>
+</body>
+</html>
+

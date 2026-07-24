@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surviving the Dust Bowl: An Interactive Challenge</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fdf6e3; /* Light beige/paper */
+            color: #5d4037; /* Dark brown text */
+        }
+        .main-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(93, 64, 55, 0.2);
+            overflow: hidden;
+            border: 4px solid #8d6e63; /* Medium brown border */
+        }
+        .game-header {
+            background: linear-gradient(135deg, #d7ccc8 0%, #a1887f 100%);
+            color: #3e2723;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 4px solid #5d4037;
+        }
+        .game-header h1 {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        .nav-pills .nav-link {
+            color: #5d4037;
+            font-weight: bold;
+            margin: 0 5px;
+            border-radius: 20px;
+            background-color: #efebe9;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #ff7043; /* Burnt orange */
+            color: white;
+        }
+        .section-content {
+            padding: 30px;
+            min-height: 500px;
+        }
+        /* Game specific styles */
+        .stat-display {
+            background: #4e342e;
+            color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .choice-card {
+            border: 3px solid #ffcc80; /* Light orange */
+            background: #fff3e0;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            height: 100%;
+        }
+        .choice-card:hover {
+            transform: scale(1.05);
+            background: #ffe0b2;
+            border-color: #ff9800;
+        }
+        .choice-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .feedback-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            text-align: center;
+            width: 80%;
+            max-width: 500px;
+            border: 5px solid #ff7043;
+        }
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 999;
+            display: none;
+        }
+        #storm-visualizer {
+            height: 300px;
+            background: linear-gradient(to bottom, #81d4fa, #e1f5fe); /* Sky blue */
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            border: 2px solid #5d4037;
+        }
+        .storm-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #5d4037; /* Soil color */
+            opacity: 0.7;
+            transition: height 0.5s ease-out;
+        }
+        #map-container {
+            height: 400px;
+            border-radius: 10px;
+            border: 2px solid #5d4037;
+        }
+        .pop-fact {
+            background: #fff9c4; /* Pale yellow */
+            border-left: 5px solid #fbc02d;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .btn-game {
+            background: #ff7043;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: background 0.3s;
+        }
+        .btn-game:hover {
+            background: #f4511e;
+            color: white;
+        }
+        /* True/False styles */
+        .tf-btn {
+            width: 48%;
+            margin: 1%;
+            padding: 20px;
+            font-size: 1.5em;
+            border-radius: 15px;
+        }
+        .quiz-score {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff7043;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="game-header">
+        <h1>🌪️ Surviving the Dust Bowl 🚜</h1>
+        <p>Can you manage a farm and survive the "Dirty Thirties"?</p>
+    </div>
+
+    <ul class="nav nav-pills justify-content-center py-3" id="gameTabs">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#mission">Mission</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#farm-sim">Farm Sim</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#storm-lab">Storm Lab</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#journey">The Journey</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#challenge">Quiz Challenge</a></li>
+    </ul>
+
+    <div class="tab-content">
+        
+        <!-- MISSION BRIEFING -->
+        <div class="tab-pane fade show active section-content text-center" id="mission">
+            <h2 class="mb-4">Your Challenge</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <p class="lead">It's the early 1900s. The Great Plains are booming. Everyone says, "Rain follows the plow!"</p>
+                    <p>Your goal is to build a successful farm. But be warned: nature has limits, and greed has consequences.</p>
+                    <hr>
+                    <div class="row mt-4">
+                        <div class="col-4">
+                            <div class="display-4">🌾</div>
+                            <h5>Grow Crops</h5>
+                            <small>Wheat prices are high!</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="display-4">💰</div>
+                            <h5>Make Money</h5>
+                            <small>Expand your farm!</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="display-4">⚖️</div>
+                            <h5>Keep Balance</h5>
+                            <small>Or face the dust...</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-game mt-5" onclick="document.querySelector('a[href=\'#farm-sim\']').click()">Start Farming!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- FARM SIMULATION GAME -->
+        <div class="tab-pane fade section-content" id="farm-sim">
+            <div class="stat-display d-flex justify-content-around">
+                <span>📅 Year: <span id="year">1915</span></span>
+                <span>💰 Cash: $<span id="cash">1000</span></span>
+                <span>🌱 Soil Health: <span id="soil">100</span>%</span>
+            </div>
+
+            <div id="game-scene" class="text-center">
+                <h3 id="scenario-title">World War I Wheat Boom!</h3>
+                <p id="scenario-desc" class="lead mb-4">Prices for wheat are skyrocketing! Everyone is plowing up more land to get rich. What will you do?</p>
+                
+                <div class="row g-4" id="choices-area">
+                    <div class="col-md-6">
+                        <div class="choice-card" onclick="makeChoice('aggro')">
+                            <span class="choice-icon">🚜</span>
+                            <h4>Plow Everything!</h4>
+                            <p>Buy a tractor on credit. Plow up every inch of grass to plant wheat. Maximize profit!</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="choice-card" onclick="makeChoice('safe')">
+                            <span class="choice-icon">🌿</span>
+                            <h4>Play it Safe</h4>
+                            <p>Keep some native grass for grazing. Plant less wheat but protect the soil.</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="game-over-msg" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- STORM LAB -->
+        <div class="tab-pane fade section-content" id="storm-lab">
+            <h2 class="text-center">Create a Dust Storm</h2>
+            <p class="text-center">Adjust the factors to see what creates a "Black Blizzard".</p>
+            
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Drought Severity (Lack of Rain)</label>
+                    <input type="range" class="form-range" id="drought-slider" min="0" max="100" value="0" oninput="updateStorm()">
+                    
+                    <label class="form-label fw-bold mt-3">Wind Speed</label>
+                    <input type="range" class="form-range" id="wind-slider" min="0" max="100" value="20" oninput="updateStorm()">
+                    
+                    <label class="form-label fw-bold mt-3">Exposed Topsoil (No Grass Roots)</label>
+                    <input type="range" class="form-range" id="soil-slider" min="0" max="100" value="10" oninput="updateStorm()">
+                </div>
+                <div class="col-md-8">
+                    <div id="storm-visualizer">
+                        <div id="dust-cloud" class="storm-layer" style="height: 10%;"></div>
+                        <div style="position: absolute; bottom: 10px; left: 10px; font-weight: bold; color: #333;">Farm House 🏠</div>
+                    </div>
+                    <div class="mt-2 text-center fw-bold" id="storm-status">Status: Clear Skies ☀️</div>
+                </div>
+            </div>
+            
+            <div class="pop-fact mt-4">
+                <strong>💡 Fact:</strong> Native prairie grasses had roots 6 feet deep that held soil together. Wheat has shallow roots. When the drought came, wheat died and the soil blew away.
+            </div>
+        </div>
+
+        <!-- THE JOURNEY (MAP) -->
+        <div class="tab-pane fade section-content" id="journey">
+            <h2 class="text-center">The Okie Migration</h2>
+            <p class="text-center">Click the markers to follow the Joad family's route (inspired by <em>The Grapes of Wrath</em>).</p>
+            <div id="map-container"></div>
+            <div id="diary-entry" class="mt-3 p-3 bg-light border rounded text-center" style="display:none; font-style: italic;">
+                <!-- Diary text appears here -->
+            </div>
+        </div>
+
+        <!-- QUIZ CHALLENGE -->
+        <div class="tab-pane fade section-content text-center" id="challenge">
+            <h2>Dust Bowl Rapid Fire 🔥</h2>
+            <p>Test your knowledge! Get as many right as you can.</p>
+            
+            <div id="quiz-area" class="mt-4">
+                <h3 id="question-text" class="mb-4">Loading...</h3>
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-success tf-btn" onclick="answerQuiz(true)">TRUE</button>
+                    <button class="btn btn-danger tf-btn" onclick="answerQuiz(false)">FALSE</button>
+                </div>
+                <div class="mt-4">Score: <span id="score-val" class="quiz-score">0</span></div>
+            </div>
+            
+            <div id="quiz-end" style="display:none;">
+                <h3>Game Over!</h3>
+                <p class="lead">Final Score: <span id="final-score"></span></p>
+                <button class="btn btn-game" onclick="resetQuiz()">Play Again</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Overlay for Game Feedback -->
+<div class="overlay" id="overlay"></div>
+<div class="feedback-modal" id="modal">
+    <h3 id="modal-title">Result</h3>
+    <p id="modal-text">Details...</p>
+    <button class="btn btn-game" onclick="nextTurn()">Continue</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // --- FARM SIMULATION LOGIC ---
+    let gameState = {
+        year: 1915,
+        cash: 1000,
+        soil: 100,
+        stage: 0
+    };
+
+    const stages = [
+        {
+            year: 1915,
+            title: "WWI Wheat Boom 🌍",
+            desc: "War in Europe means high wheat prices! Banks are offering cheap loans for tractors.",
+            choices: {
+                aggro: { title: "Buy Tractor & Plow All", diffCash: 500, diffSoil: -20, msg: "You made huge profits! But your soil is getting loose without grass roots." },
+                safe: { title: "Farm Traditionally", diffCash: 100, diffSoil: -5, msg: "Profits are modest. Your neighbors call you old-fashioned, but your land is stable." }
+            }
+        },
+        {
+            year: 1920,
+            title: "Post-War Price Drop 📉",
+            desc: "The war is over. Wheat prices crashed. You need to make ends meet.",
+            choices: {
+                aggro: { title: "Plant Double to Make Up", diffCash: 100, diffSoil: -30, msg: "You plowed marginal land to pay bills. The soil looks dusty and dry." },
+                safe: { title: "Rest Some Fields", diffCash: -100, diffSoil: 10, msg: "You lost money this year, but your soil recovered a bit." }
+            }
+        },
+        {
+            year: 1929,
+            title: "The Great Depression 🏦",
+            desc: "The economy collapsed. Nobody has money. A drought is starting...",
+            choices: {
+                aggro: { title: "Keep Plowing", diffCash: 50, diffSoil: -40, msg: "The ground is powder. The wind is picking up..." },
+                safe: { title: "Plant Trees (Shelterbelt)", diffCash: -50, diffSoil: 5, msg: "Trees help block the wind, but it cost you precious cash." }
+            }
+        },
+        {
+            year: 1934,
+            title: "Black Sunday 🌪️",
+            desc: "The massive storm hits! Is your farm resilient enough?",
+            choices: null // End game calculation
+        }
+    ];
+
+    function updateDisplay() {
+        document.getElementById('year').innerText = gameState.year;
+        document.getElementById('cash').innerText = gameState.cash;
+        document.getElementById('soil').innerText = gameState.soil;
+        
+        // Color coding
+        document.getElementById('soil').style.color = gameState.soil < 50 ? 'red' : 'green';
+    }
+
+    function makeChoice(type) {
+        let currentStage = stages[gameState.stage];
+        let outcome = currentStage.choices[type];
+
+        gameState.cash += outcome.diffCash;
+        gameState.soil += outcome.diffSoil;
+        if(gameState.soil > 100) gameState.soil = 100;
+        if(gameState.soil < 0) gameState.soil = 0;
+
+        showModal(outcome.title, outcome.msg);
+    }
+
+    function showModal(title, text) {
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-text').innerText = text;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('modal').style.display = 'block';
+    }
+
+    function nextTurn() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('modal').style.display = 'none';
+        
+        gameState.stage++;
+        
+        if (gameState.stage >= stages.length - 1) { // Final Stage
+            endGame();
+        } else {
+            let nextStage = stages[gameState.stage];
+            gameState.year = nextStage.year;
+            document.getElementById('scenario-title').innerText = nextStage.title;
+            document.getElementById('scenario-desc').innerText = nextStage.desc;
+            
+            // Update button text
+            let btns = document.querySelectorAll('.choice-card');
+            btns[0].querySelector('h4').innerText = nextStage.choices.aggro.title;
+            btns[1].querySelector('h4').innerText = nextStage.choices.safe.title;
+            
+            updateDisplay();
+        }
+    }
+
+    function endGame() {
+        let finalTitle = "1934: The Dust Settles";
+        let finalMsg = "";
+        let success = false;
+
+        if (gameState.soil < 40) {
+            finalMsg = "Your farm has blown away. The soil was too loose to survive the winds. You are forced to pack up and migrate to California. You are now a Dust Bowl refugee.";
+        } else if (gameState.cash < 0) {
+            finalMsg = "Your soil survived, but the bank foreclosed on your mortgage. You lost the farm to debt.";
+        } else {
+            finalMsg = "You survived! By conserving soil and managing money, you weathered the storm. You can rebuild.";
+            success = true;
+        }
+
+        let html = `
+            <div class="alert ${success ? 'alert-success' : 'alert-danger'}">
+                <h4>${success ? '🏆 Survivor!' : '💀 Game Over'}</h4>
+                <p>${finalMsg}</p>
+                <button class="btn btn-primary" onclick="location.reload()">Try Again</button>
+            </div>
+        `;
+        document.getElementById('choices-area').style.display = 'none';
+        document.getElementById('scenario-title').innerText = finalTitle;
+        document.getElementById('scenario-desc').style.display = 'none';
+        document.getElementById('game-over-msg').innerHTML = html;
+        document.getElementById('game-over-msg').style.display = 'block';
+        updateDisplay();
+    }
+
+    // --- STORM VISUALIZER ---
+    function updateStorm() {
+        let drought = parseInt(document.getElementById('drought-slider').value);
+        let wind = parseInt(document.getElementById('wind-slider').value);
+        let badSoil = parseInt(document.getElementById('soil-slider').value);
+        
+        // Calculate intensity (0-100)
+        let intensity = (drought * 0.3) + (wind * 0.3) + (badSoil * 0.4);
+        
+        let cloud = document.getElementById('dust-cloud');
+        let status = document.getElementById('storm-status');
+        
+        cloud.style.height = intensity + "%";
+        
+        if (intensity < 30) {
+            cloud.style.opacity = 0.3;
+            status.innerText = "Status: Hazy Day 🌫️";
+        } else if (intensity < 70) {
+            cloud.style.opacity = 0.7;
+            status.innerText = "Status: Dust Storm Warning ⚠️";
+        } else {
+            cloud.style.opacity = 1;
+            status.innerText = "Status: BLACK BLIZZARD! 🚨";
+        }
+    }
+
+    // --- MAP ---
+    // Initialize map only when tab is shown to prevent rendering issues
+    document.addEventListener('shown.bs.tab', function (e) {
+        if (e.target.href.includes("#journey")) {
+            initMap();
+        }
+    });
+
+    let mapInitialized = false;
+    function initMap() {
+        if (mapInitialized) return;
+        
+        var map = L.map('map-container').setView([36.0, -105.0], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        var points = [
+            { coords: [36.5, -101.5], title: "Oklahoma Panhandle", text: "Day 1: We lost the farm. Packed the jalopy. It's so heavy the springs are groaning. Leaving home forever." },
+            { coords: [35.2, -101.8], title: "Amarillo, TX", text: "Day 4: Tire blew out. Dad had to fix it on the side of Route 66. Sand everywhere." },
+            { coords: [35.0, -106.6], title: "Albuquerque, NM", text: "Day 10: Crossed the mountains. The old car overheated three times. We're running low on money." },
+            { coords: [35.1, -114.6], title: "Needles, CA (Border)", text: "Day 18: Reached California! But police tried to turn us back. They called us 'Bums'." },
+            { coords: [35.3, -119.0], title: "Bakersfield, CA", text: "Day 25: Found a migrant camp. No houses, just tents. Picking peaches for 15 cents an hour." }
+        ];
+
+        points.forEach(p => {
+            L.marker(p.coords).addTo(map)
+                .bindPopup(`<b>${p.title}</b>`)
+                .on('click', () => {
+                    let d = document.getElementById('diary-entry');
+                    d.style.display = 'block';
+                    d.innerText = p.text;
+                });
+        });
+        
+        // Draw line
+        var latlngs = points.map(p => p.coords);
+        var polyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
+        
+        mapInitialized = true;
+    }
+
+    // --- QUIZ ---
+    const questions = [
+        { q: "The Dust Bowl was caused entirely by natural drought.", a: false },
+        { q: "Native prairie grass had deep roots that held soil in place.", a: true },
+        { q: "Farmers plowed more land during WWI because wheat prices were high.", a: true },
+        { q: "Most Dust Bowl migrants moved to New York City.", a: false }, // False, California
+        { q: "The 'Black Sunday' storm happened in 1935.", a: true },
+        { q: "Planting trees (shelterbelts) makes wind erosion worse.", a: false } // False, it helps
+    ];
+    
+    let qIndex = 0;
+    let quizScore = 0;
+
+    function displayQuestion() {
+        if (qIndex < questions.length) {
+            document.getElementById('question-text').innerText = questions[qIndex].q;
+        } else {
+            endQuiz();
+        }
+    }
+
+    function answerQuiz(userAnswer) {
+        if (userAnswer === questions[qIndex].a) {
+            quizScore++;
+            document.getElementById('score-val').innerText = quizScore;
+            // Visual feedback could go here
+        }
+        qIndex++;
+        displayQuestion();
+    }
+
+    function endQuiz() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('quiz-end').style.display = 'block';
+        document.getElementById('final-score').innerText = quizScore + " / " + questions.length;
+    }
+
+    function resetQuiz() {
+        qIndex = 0;
+        quizScore = 0;
+        document.getElementById('score-val').innerText = 0;
+        document.getElementById('quiz-area').style.display = 'block';
+        document.getElementById('quiz-end').style.display = 'none';
+        displayQuestion();
+    }
+
+    // Init
+    displayQuestion();
+
+</script>
+</body>
+</html>

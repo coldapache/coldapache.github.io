@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Estate Portfolio Manager - Top-Down City Game</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+    --re-navy: #0f1b2d;
+    --re-navy-light: #1a2d47;
+    --re-navy-mid: #243b5e;
+    --re-gold: #d4a843;
+    --re-gold-light: #e8c96a;
+    --re-green: #2ecc71;
+    --re-green-dark: #27ae60;
+    --re-red: #e74c3c;
+    --re-blue: #3498db;
+    --re-orange: #f39c12;
+    --re-gray: #95a5a6;
+    --re-bg: #f0f2f5;
+    --re-card: #ffffff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:var(--re-bg); color:#333; }
+.app-header {
+    background: linear-gradient(135deg, var(--re-navy), var(--re-navy-light));
+    color:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.app-header h1 { font-size:1.3rem; font-weight:800; letter-spacing:-0.5px; }
+.app-header h1 i { color:var(--re-gold); margin-right:8px; }
+.stats-bar {
+    display:flex; gap:20px; align-items:center; flex-wrap:wrap;
+}
+.stat-item { text-align:center; min-width:90px; }
+.stat-item .stat-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; opacity:0.7; }
+.stat-item .stat-value { font-size:1.05rem; font-weight:700; }
+.stat-item .stat-value.cash { color:var(--re-green); }
+.stat-item .stat-value.cash.negative { color:var(--re-red); }
+.stat-item .stat-value.nw { color:var(--re-gold); }
+.nav-tabs-custom {
+    background:var(--re-navy); border:none; padding:0 16px;
+    display:flex; gap:2px; overflow-x:auto;
+}
+.nav-tabs-custom .nav-link {
+    color:rgba(255,255,255,0.6); border:none; border-radius:0;
+    padding:10px 16px; font-size:0.8rem; font-weight:600; white-space:nowrap;
+    border-bottom:3px solid transparent; transition:all 0.2s;
+}
+.nav-tabs-custom .nav-link:hover { color:#fff; background:rgba(255,255,255,0.05); }
+.nav-tabs-custom .nav-link.active {
+    color:var(--re-gold); background:rgba(212,168,67,0.1);
+    border-bottom-color:var(--re-gold);
+}
+.tab-content { padding:0; height:calc(100vh - 110px); overflow:hidden; position:relative; }
+.tab-pane { padding:16px; height:100%; overflow-y:auto; display:none !important; }
+.tab-pane.active.show, .tab-pane.active { display:block !important; }
+/* City Map */
+#cityMapTab.active { padding:0; display:flex !important; height:100%; position:relative; overflow:hidden !important; }
+.map-area { flex:1; position:relative; background:#d5ddd2; overflow:hidden; }
+#cityCanvas { width:100%; height:100%; cursor:pointer; }
+.side-panel {
+    width:380px; position:fixed; right:0; top:56px; bottom:0; z-index:500;
+    background:var(--re-card); border-left:1px solid #ddd;
+    overflow-y:auto; transition:right 0.3s; padding:0;
+    display:flex; flex-direction:column;
+    box-shadow:-4px 0 20px rgba(0,0,0,0.15);
+}
+.side-panel.hidden { right:-400px; }
+.panel-header {
+    background: linear-gradient(135deg, var(--re-navy), var(--re-navy-mid));
+    color:#fff; padding:16px; position:sticky; top:0; z-index:10;
+}
+.panel-header h3 { font-size:1rem; font-weight:700; margin-bottom:4px; }
+.panel-header .prop-type { font-size:0.75rem; opacity:0.8; }
+.panel-body { padding:16px; flex:1; }
+.detail-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:0.85rem; }
+.detail-row .label { color:#666; }
+.detail-row .value { font-weight:600; }
+.detail-row .value.positive { color:var(--re-green-dark); }
+.detail-row .value.negative { color:var(--re-red); }
+.action-btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.action-btns .btn { font-size:0.78rem; padding:6px 12px; font-weight:600; }
+.btn-re-primary { background:var(--re-gold); color:var(--re-navy); border:none; }
+.btn-re-primary:hover { background:var(--re-gold-light); color:var(--re-navy); }
+.btn-re-danger { background:var(--re-red); color:#fff; border:none; }
+.btn-re-danger:hover { background:#c0392b; color:#fff; }
+.btn-re-outline { border:1px solid var(--re-navy-mid); color:var(--re-navy); background:transparent; }
+.btn-re-outline:hover { background:var(--re-navy); color:#fff; }
+.condition-bar { height:8px; background:#eee; border-radius:4px; overflow:hidden; margin-top:4px; }
+.condition-fill { height:100%; border-radius:4px; transition:width 0.3s; }
+/* Portfolio */
+.portfolio-card {
+    background:var(--re-card); border-radius:10px; padding:16px; margin-bottom:12px;
+    border-left:4px solid var(--re-blue); box-shadow:0 1px 4px rgba(0,0,0,0.08);
+}
+.portfolio-card.commercial { border-left-color:var(--re-orange); }
+.portfolio-card .prop-name { font-weight:700; font-size:0.95rem; }
+.portfolio-card .prop-meta { font-size:0.78rem; color:#666; margin-top:2px; }
+.portfolio-card .prop-numbers { display:flex; gap:16px; margin-top:10px; flex-wrap:wrap; }
+.portfolio-card .prop-num { text-align:center; }
+.portfolio-card .prop-num .num-label { font-size:0.65rem; text-transform:uppercase; color:#888; }
+.portfolio-card .prop-num .num-value { font-size:0.95rem; font-weight:700; }
+/* Financials */
+.chart-card { background:var(--re-card); border-radius:10px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+.ratio-card {
+    background:var(--re-card); border-radius:10px; padding:16px; text-align:center;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+}
+.ratio-card .ratio-value { font-size:1.8rem; font-weight:800; color:var(--re-navy); }
+.ratio-card .ratio-label { font-size:0.75rem; color:#666; margin-top:4px; }
+/* Market */
+.market-card {
+    background:var(--re-card); border-radius:10px; padding:16px; margin-bottom:12px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08); cursor:pointer; transition:all 0.2s;
+}
+.market-card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.12); }
+.market-card .price-tag { font-size:1.2rem; font-weight:800; color:var(--re-navy); }
+.market-card .rent-est { font-size:0.85rem; color:var(--re-green-dark); font-weight:600; }
+.market-indicator {
+    display:inline-flex; align-items:center; gap:4px; padding:4px 10px;
+    border-radius:20px; font-size:0.75rem; font-weight:600;
+}
+.market-indicator.up { background:#d4edda; color:#155724; }
+.market-indicator.down { background:#f8d7da; color:#721c24; }
+.market-indicator.neutral { background:#fff3cd; color:#856404; }
+/* Assessment */
+.quiz-container { max-width:800px; margin:0 auto; }
+.quiz-question {
+    background:var(--re-card); border-radius:10px; padding:20px; margin-bottom:16px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+}
+.quiz-question h5 { font-size:0.9rem; font-weight:700; margin-bottom:12px; }
+.quiz-option {
+    display:block; padding:10px 14px; margin:6px 0; border:2px solid #e0e0e0;
+    border-radius:8px; cursor:pointer; font-size:0.85rem; transition:all 0.2s;
+}
+.quiz-option:hover { border-color:var(--re-blue); background:#f0f7ff; }
+.quiz-option.selected { border-color:var(--re-blue); background:#e3f0ff; }
+.quiz-option.correct { border-color:var(--re-green); background:#d4edda; }
+.quiz-option.incorrect { border-color:var(--re-red); background:#f8d7da; }
+.quiz-feedback { margin-top:10px; padding:10px; border-radius:8px; font-size:0.82rem; display:none; }
+.quiz-feedback.show { display:block; }
+.quiz-feedback.correct { background:#d4edda; color:#155724; }
+.quiz-feedback.incorrect { background:#f8d7da; color:#721c24; }
+/* Teacher */
+.teacher-section { background:var(--re-card); border-radius:10px; padding:20px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+.teacher-section h4 { font-size:1rem; font-weight:700; color:var(--re-navy); margin-bottom:12px; }
+.teacher-section h4 i { color:var(--re-gold); margin-right:8px; }
+/* Tooltip */
+.term-tip {
+    text-decoration:underline dotted var(--re-gold); cursor:help; color:var(--re-navy); font-weight:600;
+}
+.tooltip-inner { max-width:300px; text-align:left; font-size:0.8rem; }
+/* Tutorial overlay */
+.tutorial-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+}
+.tutorial-box {
+    background:#fff; border-radius:16px; padding:32px; max-width:560px; width:90%;
+    text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.tutorial-box h2 { font-size:1.4rem; font-weight:800; color:var(--re-navy); margin-bottom:8px; }
+.tutorial-box p { font-size:0.9rem; color:#555; line-height:1.6; }
+.tutorial-box .btn { margin-top:16px; }
+/* Events */
+.event-toast {
+    position:fixed; top:80px; right:20px; z-index:1000; max-width:360px;
+    background:var(--re-card); border-radius:12px; padding:16px 20px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.15); border-left:4px solid var(--re-gold);
+    animation:slideIn 0.4s ease-out; display:none;
+}
+.event-toast.show { display:block; }
+.event-toast h5 { font-size:0.9rem; font-weight:700; margin-bottom:6px; }
+.event-toast p { font-size:0.8rem; color:#555; margin:0; }
+@keyframes slideIn { from{transform:translateX(100%);opacity:0;} to{transform:translateX(0);opacity:1;} }
+/* Monthly Summary */
+.month-toast {
+    position:fixed; bottom:-400px; left:50%; transform:translateX(-50%); z-index:1500;
+    width:94%; max-width:440px; background:#fff; border-radius:16px 16px 0 0;
+    box-shadow:0 -8px 40px rgba(0,0,0,0.25); transition:bottom 0.4s cubic-bezier(0.22,1,0.36,1);
+    padding:16px 20px 14px; max-height:55vh; overflow-y:auto;
+}
+.month-toast.show { bottom:0; }
+.month-toast h4 { font-weight:800; color:var(--re-navy); margin-bottom:10px; font-size:0.9rem; display:flex; align-items:center; justify-content:space-between; }
+.month-toast h4 i.fa-calendar-check { color:var(--re-gold); margin-right:8px; }
+.month-toast .ms-close { background:none; border:none; color:#999; font-size:1.1rem; cursor:pointer; padding:0 4px; }
+.month-toast .ms-close:hover { color:#333; }
+.ms-row { display:flex; justify-content:space-between; padding:4px 0; font-size:0.8rem; border-bottom:1px solid #f0f0f0; }
+.ms-row .ms-label { color:#666; }
+.ms-row .ms-val { font-weight:600; }
+.ms-row .ms-val.pos { color:var(--re-green-dark); }
+.ms-row .ms-val.neg { color:var(--re-red); }
+.ms-row.ms-total { border-top:2px solid var(--re-navy); border-bottom:none; padding-top:6px; margin-top:3px; }
+.ms-row.ms-total .ms-label { font-weight:700; color:var(--re-navy); }
+.ms-row.ms-total .ms-val { font-size:0.95rem; }
+.ms-alert { padding:6px 10px; border-radius:8px; font-size:0.78rem; margin-top:8px; }
+.ms-alert.warning { background:#fff3cd; color:#856404; }
+.ms-alert.danger { background:#f8d7da; color:#721c24; }
+.ms-alert.success { background:#d4edda; color:#155724; }
+.ms-alert i { margin-right:6px; }
+.ms-fade { opacity:0.3; transition:opacity 0.5s; }
+.learn-toast {
+    position:fixed; bottom:-300px; left:50%; transform:translateX(-50%); z-index:1400;
+    width:94%; max-width:440px; background:linear-gradient(135deg,#1a2d47,#0f1b2d); color:#fff;
+    border-radius:16px 16px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,0.3);
+    padding:16px 20px 14px; transition:bottom 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+.learn-toast.show { bottom:0; }
+.learn-toast h5 { font-weight:800; font-size:0.85rem; margin-bottom:8px; color:var(--re-gold); display:flex; align-items:center; justify-content:space-between; }
+.learn-toast p { font-size:0.78rem; line-height:1.5; opacity:0.9; margin:0; }
+.learn-toast .ms-close { background:none; border:none; color:rgba(255,255,255,0.6); font-size:1.1rem; cursor:pointer; padding:0 4px; }
+.learn-toast .ms-close:hover { color:#fff; }
+/* Austin Map */
+#austinMapTab.active { display:block !important; height:100%; overflow:hidden; }
+#austinMapTab .leaflet-container { font-family:'Inter',sans-serif; }
+.austin-marker { display:flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.3); color:#fff; font-size:11px; font-weight:700; cursor:pointer; transition:transform 0.15s; }
+.austin-marker:hover { transform:scale(1.2); }
+.austin-marker.owned { border-color:#f1c40f; box-shadow:0 0 0 3px rgba(241,196,15,0.4), 0 2px 6px rgba(0,0,0,0.3); }
+.austin-marker.selected { transform:scale(1.3); border-color:#fff; box-shadow:0 0 0 4px rgba(212,168,67,0.7), 0 2px 8px rgba(0,0,0,0.4); }
+.austin-marker .vacant-badge { position:absolute; top:-4px; right:-4px; background:var(--re-red); color:#fff; font-size:7px; width:14px; height:14px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; }
+/* Owned property rich markers on Austin map */
+.austin-owned-marker {
+    width:90px; background:#fff; border-radius:10px; border:3px solid #3498db;
+    box-shadow:0 3px 12px rgba(0,0,0,0.3); overflow:hidden; cursor:pointer;
+    transition:transform 0.15s;
+}
+.austin-owned-marker:hover { transform:scale(1.08); }
+.austin-owned-marker.selected { border-color:var(--re-gold); box-shadow:0 0 0 4px rgba(212,168,67,0.5), 0 3px 12px rgba(0,0,0,0.3); transform:scale(1.1); }
+.aom-header {
+    color:#fff; font-size:8px; font-weight:800; text-align:center;
+    padding:2px 0; text-transform:uppercase; letter-spacing:0.5px;
+}
+.aom-body { padding:3px 5px 4px; }
+.aom-cf { font-size:11px; font-weight:800; text-align:center; margin-bottom:1px; }
+.aom-cf.cf-pos { color:#27ae60; }
+.aom-cf.cf-neg { color:#e74c3c; }
+.aom-row { font-size:8px; text-align:center; color:#555; margin-bottom:2px; white-space:nowrap; overflow:hidden; }
+.aom-cond { height:4px; background:#eee; border-radius:2px; overflow:hidden; }
+.aom-cond-fill { height:100%; border-radius:2px; transition:width 0.3s; }
+/* Map Dashboard */
+.map-dashboard {
+    position:absolute; bottom:16px; right:16px; z-index:1000;
+    background:rgba(15,27,45,0.92); backdrop-filter:blur(12px);
+    border-radius:14px; padding:0; width:240px;
+    box-shadow:0 4px 24px rgba(0,0,0,0.35); border:1px solid rgba(212,168,67,0.3);
+    color:#fff; overflow:hidden;
+}
+.md-header {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 14px 6px; border-bottom:1px solid rgba(255,255,255,0.1);
+}
+.md-month { font-weight:800; font-size:0.85rem; }
+.md-market {
+    font-size:0.65rem; padding:2px 8px; border-radius:10px; font-weight:700;
+    background:rgba(46,204,113,0.2); color:#2ecc71; text-transform:uppercase; letter-spacing:0.5px;
+}
+.md-market.boom { background:rgba(46,204,113,0.25); color:#2ecc71; }
+.md-market.bust { background:rgba(231,76,60,0.25); color:#e74c3c; }
+.md-stats { padding:8px 14px; display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; }
+.md-stat { }
+.md-stat:last-child { grid-column:span 2; text-align:center; border-top:1px solid rgba(255,255,255,0.08); padding-top:4px; margin-top:2px; }
+.md-stat-label { font-size:0.6rem; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:0.5px; }
+.md-stat-value { font-size:0.82rem; font-weight:700; color:var(--re-gold); }
+.md-actions {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:8px 12px 10px; border-top:1px solid rgba(255,255,255,0.1);
+}
+.md-auto-toggle {
+    display:flex; align-items:center; gap:5px; cursor:pointer; flex-shrink:0;
+}
+.md-auto-toggle input { display:none; }
+.md-auto-toggle .toggle-label { font-size:0.65rem; color:rgba(255,255,255,0.6); }
+.md-auto-toggle input:checked ~ .toggle-label { color:var(--re-green); }
+.md-next-btn {
+    background:linear-gradient(135deg, var(--re-gold), var(--re-gold-light));
+    color:var(--re-navy); border:none; padding:8px 16px; border-radius:25px;
+    font-weight:800; font-size:0.78rem; cursor:pointer; transition:all 0.2s;
+    white-space:nowrap;
+}
+.md-next-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(212,168,67,0.4); }
+/* Printable */
+#printableTab { max-width:850px; margin:0 auto; }
+@media print {
+    body > *:not(#worksheet-content) { display:none !important; }
+    #worksheet-content { display:block !important; padding:20px; font-size:11pt; }
+    .ws-section { page-break-inside:avoid; margin-bottom:16px; }
+    .ws-question { page-break-inside:avoid; }
+    .no-print { display:none !important; }
+    .ws-answer-key { page-break-before:always; }
+    .ws-opts-tbl { width:100%; border-collapse:collapse; page-break-inside:avoid; }
+    .ws-opts-tbl td { padding:1px 8px; width:50%; font-size:11pt; }
+}
+#worksheet-content { display:none; }
+/* Next Turn btn */
+.bottom-bar {
+    position:fixed; bottom:16px; right:16px; z-index:100;
+    display:flex; align-items:center; gap:12px;
+}
+.auto-fill-toggle {
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+    background:rgba(15,27,45,0.85); padding:8px 14px; border-radius:50px;
+    backdrop-filter:blur(8px); border:1px solid rgba(212,168,67,0.3);
+}
+.auto-fill-toggle input { display:none; }
+.toggle-slider {
+    width:36px; height:20px; background:#444; border-radius:10px; position:relative;
+    transition:background 0.2s; flex-shrink:0;
+}
+.toggle-slider::after {
+    content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+    background:#aaa; border-radius:50%; transition:all 0.2s;
+}
+input:checked + .toggle-slider { background:var(--re-green); }
+input:checked + .toggle-slider::after { left:18px; background:#fff; }
+.toggle-label { color:#ccc; font-size:0.78rem; font-weight:600; white-space:nowrap; }
+input:checked ~ .toggle-label { color:var(--re-green); }
+.next-turn-btn {
+    background: linear-gradient(135deg, var(--re-gold), var(--re-gold-light));
+    color:var(--re-navy); border:none; padding:14px 28px; border-radius:50px;
+    font-weight:800; font-size:0.95rem; box-shadow:0 4px 20px rgba(212,168,67,0.4);
+    cursor:pointer; transition:all 0.2s;
+}
+.next-turn-btn:hover { transform:translateY(-2px); box-shadow:0 6px 25px rgba(212,168,67,0.5); }
+.learn-popup {
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000;
+    display:none; align-items:center; justify-content:center;
+}
+.learn-popup.show { display:flex; }
+.learn-box {
+    background:#fff; border-radius:16px; padding:28px; max-width:500px; width:90%;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.learn-box h4 { color:var(--re-navy); font-weight:800; margin-bottom:10px; }
+.learn-box h4 i { color:var(--re-gold); margin-right:8px; }
+.learn-box p { font-size:0.88rem; color:#444; line-height:1.6; }
+/* Quick Reference Guide */
+.guide-btn {
+    position:absolute; top:12px; left:12px; z-index:15;
+    background:rgba(15,27,45,0.85); color:#fff; border:2px solid var(--re-gold);
+    padding:8px 14px; border-radius:25px; font-size:0.8rem; font-weight:700;
+    cursor:pointer; transition:all 0.2s; backdrop-filter:blur(4px);
+}
+.guide-btn:hover { background:var(--re-gold); color:var(--re-navy); }
+.guide-overlay {
+    position:absolute; inset:0; z-index:18; background:rgba(0,0,0,0.5);
+    display:none; align-items:flex-start; justify-content:center; padding-top:60px;
+}
+.guide-overlay.show { display:flex; }
+.guide-card {
+    background:#fff; border-radius:14px; padding:24px; max-width:460px; width:90%;
+    box-shadow:0 12px 40px rgba(0,0,0,0.3); max-height:calc(100% - 80px); overflow-y:auto;
+}
+.guide-card h4 { font-weight:800; color:var(--re-navy); margin-bottom:12px; font-size:1rem; }
+.guide-card h4 i { color:var(--re-gold); margin-right:8px; }
+.guide-term { padding:8px 0; border-bottom:1px solid #f0f0f0; }
+.guide-term:last-child { border-bottom:none; }
+.guide-term .gt-name { font-weight:700; color:var(--re-navy); font-size:0.88rem; }
+.guide-term .gt-def { font-size:0.82rem; color:#555; margin-top:2px; }
+.guide-term .gt-formula { font-size:0.78rem; color:var(--re-blue); font-style:italic; margin-top:2px; }
+@media(max-width:768px){
+    .side-panel { width:100%; }
+    .stats-bar { gap:10px; }
+    .stat-item { min-width:60px; }
+    .stat-item .stat-label { font-size:0.55rem; }
+    .stat-item .stat-value { font-size:0.85rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="app-header">
+    <h1><i class="fas fa-city"></i> Real Estate Portfolio Manager</h1>
+    <div class="stats-bar">
+        <div class="stat-item"><div class="stat-label">Cash</div><div class="stat-value cash" id="hdrCash">$100,000</div></div>
+        <div class="stat-item"><div class="stat-label">Net Worth</div><div class="stat-value nw" id="hdrNetWorth">$100,000</div></div>
+        <div class="stat-item"><div class="stat-label">Month</div><div class="stat-value" id="hdrMonth">1</div></div>
+        <div class="stat-item"><div class="stat-label">Properties</div><div class="stat-value" id="hdrProps">0</div></div>
+        <div class="stat-item"><div class="stat-label">Occupancy</div><div class="stat-value" id="hdrOcc">--%</div></div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs nav-tabs-custom" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#cityMapTab"><i class="fas fa-map"></i> City Map</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#austinMapTab"><i class="fas fa-map-location-dot"></i> Austin Map</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#portfolioTab"><i class="fas fa-briefcase"></i> Portfolio</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#financialsTab"><i class="fas fa-chart-line"></i> Financials</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#marketTab"><i class="fas fa-store"></i> Market</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#assessmentTab"><i class="fas fa-clipboard-check"></i> Assessment</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#teacherTab"><i class="fas fa-chalkboard-teacher"></i> Teacher Resources</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#printableTab"><i class="fas fa-print"></i> Printable</a></li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content">
+
+<!-- 1. City Map -->
+<div class="tab-pane active" id="cityMapTab">
+    <div class="map-area">
+        <canvas id="cityCanvas"></canvas>
+    </div>
+    <button class="guide-btn" onclick="toggleGuide()"><i class="fas fa-book-open me-1"></i> Guide</button>
+    <div class="guide-overlay" id="guideOverlay" onclick="if(event.target===this)toggleGuide()">
+        <div class="guide-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="mb-0"><i class="fas fa-graduation-cap"></i> Investor's Quick Reference</h4>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleGuide()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Cap Rate (Capitalization Rate)</div>
+                <div class="gt-def">Measures how much return a property generates relative to its value. Higher = better return.</div>
+                <div class="gt-formula">Formula: Annual NOI &divide; Property Value</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">NOI (Net Operating Income)</div>
+                <div class="gt-def">All rental income minus operating costs (taxes, insurance, maintenance). Does NOT include mortgage payments.</div>
+                <div class="gt-formula">Formula: Annual Rent &minus; Annual Operating Expenses</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Cash Flow</div>
+                <div class="gt-def">The actual money left in your pocket each month after collecting rent and paying ALL bills, including the mortgage.</div>
+                <div class="gt-formula">Formula: Rent &minus; Mortgage &minus; Expenses</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Equity</div>
+                <div class="gt-def">The portion of the property you truly own. Grows as you pay down the mortgage and as the property appreciates.</div>
+                <div class="gt-formula">Formula: Property Value &minus; Mortgage Balance</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">LTV (Loan-to-Value)</div>
+                <div class="gt-def">Shows how leveraged you are. Higher LTV = more borrowed money = more risk (but also more potential upside).</div>
+                <div class="gt-formula">Formula: Mortgage Balance &divide; Property Value</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Cash-on-Cash Return</div>
+                <div class="gt-def">Measures the return on YOUR actual cash invested (the down payment), not the total property value.</div>
+                <div class="gt-formula">Formula: Annual Cash Flow &divide; Total Cash Invested</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Down Payment</div>
+                <div class="gt-def">Cash paid upfront when buying. For investment properties, lenders typically require 20% of the purchase price.</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Mortgage</div>
+                <div class="gt-def">A loan used to buy property. You pay it back monthly over 30 years with interest. The payment includes principal (loan paydown) and interest (cost of borrowing).</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Appreciation</div>
+                <div class="gt-def">When a property increases in value over time due to market conditions, neighborhood improvements, or renovations.</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Vacancy Rate</div>
+                <div class="gt-def">The percentage of time a rental unit sits empty with no tenant paying rent. Lower is better for the investor.</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Condition</div>
+                <div class="gt-def">The physical state of the property (0-100%). Low condition means higher expenses, harder to keep tenants, and potential for costly emergency repairs.</div>
+            </div>
+            <div class="guide-term">
+                <div class="gt-name">Refinancing</div>
+                <div class="gt-def">Replacing your current mortgage with a new one at a lower interest rate. Saves money monthly but has upfront closing costs (about 2%).</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 1b. Austin Map -->
+<div class="tab-pane" id="austinMapTab" style="height:100%;padding:0;position:relative;">
+    <div id="austinLeaflet" style="width:100%;height:100%;min-height:600px;"></div>
+    <div class="austin-legend" style="position:absolute;bottom:20px;left:12px;z-index:1000;background:rgba(255,255,255,0.95);border-radius:10px;padding:10px 14px;font-size:0.72rem;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+        <div style="font-weight:700;margin-bottom:4px;color:var(--re-navy);">Property Types</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3498db;margin-right:3px;"></span>House</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2980b9;margin-right:3px;"></span>Duplex</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1a5276;margin-right:3px;"></span>Apartment</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e67e22;margin-right:3px;"></span>Shop</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#d35400;margin-right:3px;"></span>Office</span>
+        </div>
+        <div style="margin-top:4px;color:#888;"><span style="display:inline-block;width:10px;height:10px;border:2px solid #f1c40f;border-radius:50%;margin-right:3px;"></span>Owned &nbsp; <span style="color:var(--re-red)">V</span>=Vacant</div>
+    </div>
+    <!-- Map Dashboard -->
+    <div class="map-dashboard" id="mapDashboard">
+        <div class="md-header">
+            <span class="md-month" id="mdMonth">Month 1</span>
+            <span class="md-market" id="mdMarket">Stable</span>
+        </div>
+        <div class="md-stats">
+            <div class="md-stat">
+                <div class="md-stat-label">Cash</div>
+                <div class="md-stat-value" id="mdCash">$100,000</div>
+            </div>
+            <div class="md-stat">
+                <div class="md-stat-label">Net Worth</div>
+                <div class="md-stat-value" id="mdNetWorth">$100,000</div>
+            </div>
+            <div class="md-stat">
+                <div class="md-stat-label">Properties</div>
+                <div class="md-stat-value" id="mdProps">0</div>
+            </div>
+            <div class="md-stat">
+                <div class="md-stat-label">Monthly CF</div>
+                <div class="md-stat-value" id="mdCashFlow">--</div>
+            </div>
+            <div class="md-stat">
+                <div class="md-stat-label">Occupancy</div>
+                <div class="md-stat-value" id="mdOccupancy">--%</div>
+            </div>
+        </div>
+        <div class="md-actions">
+            <label class="md-auto-toggle" title="Auto-fill vacant properties with tenants">
+                <input type="checkbox" id="mdAutoFill" onchange="syncAutoFill(this.checked)">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Auto-Fill</span>
+            </label>
+            <button class="md-next-btn" onclick="nextTurn()">
+                <i class="fas fa-forward me-1"></i> Next Month
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Portfolio -->
+<div class="tab-pane" id="portfolioTab">
+    <h4 class="mb-3"><i class="fas fa-briefcase" style="color:var(--re-gold)"></i> Your Portfolio</h4>
+    <div id="portfolioList"><p class="text-muted">You don't own any properties yet. Visit the City Map or Market to purchase your first property!</p></div>
+</div>
+
+<!-- 3. Financials -->
+<div class="tab-pane" id="financialsTab">
+    <h4 class="mb-3"><i class="fas fa-chart-line" style="color:var(--re-gold)"></i> Financial Dashboard</h4>
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3"><div class="ratio-card"><div class="ratio-value" id="ratioCapRate">--</div><div class="ratio-label">Avg Cap Rate</div></div></div>
+        <div class="col-6 col-md-3"><div class="ratio-card"><div class="ratio-value" id="ratioCOC">--</div><div class="ratio-label">Cash-on-Cash Return</div></div></div>
+        <div class="col-6 col-md-3"><div class="ratio-card"><div class="ratio-value" id="ratioLTV">--</div><div class="ratio-label">Avg LTV</div></div></div>
+        <div class="col-6 col-md-3"><div class="ratio-card"><div class="ratio-value" id="ratioROI">--</div><div class="ratio-label">Total ROI</div></div></div>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-8"><div class="chart-card"><canvas id="cashFlowChart" height="200"></canvas></div></div>
+        <div class="col-md-4"><div class="chart-card"><canvas id="expenseChart" height="200"></canvas></div></div>
+    </div>
+    <div class="row g-3 mt-1">
+        <div class="col-12"><div class="chart-card"><canvas id="netWorthChart" height="160"></canvas></div></div>
+    </div>
+</div>
+
+<!-- 4. Market -->
+<div class="tab-pane" id="marketTab">
+    <h4 class="mb-2"><i class="fas fa-store" style="color:var(--re-gold)"></i> Property Market</h4>
+    <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+        <div class="market-indicator neutral" id="marketTrend"><i class="fas fa-minus"></i> Stable Market</div>
+        <div class="text-muted" style="font-size:0.82rem">Interest Rate: <strong id="marketRate">6.5%</strong></div>
+        <div class="text-muted" style="font-size:0.82rem">Avg Appreciation: <strong id="marketApprec">+0.3%/mo</strong></div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info py-2 px-3" style="font-size:0.82rem">
+                <i class="fas fa-lightbulb me-1"></i> <strong>Tip:</strong> Compare the <span class="term-tip" data-bs-toggle="tooltip" title="Cap Rate = Net Operating Income / Purchase Price. Higher cap rate = higher return relative to price.">Cap Rate</span> and monthly cash flow before buying. A property that looks cheap might have high expenses!
+            </div>
+        </div>
+    </div>
+    <div id="marketListings" class="row g-3"></div>
+</div>
+
+<!-- 5. Assessment -->
+<div class="tab-pane" id="assessmentTab">
+    <div class="quiz-container">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4><i class="fas fa-clipboard-check" style="color:var(--re-gold)"></i> Real Estate Investing Assessment</h4>
+            <div><span id="quizScore" class="badge bg-primary">0 / 20</span> <button class="btn btn-sm btn-re-outline ms-2" onclick="resetQuiz()">Reset</button></div>
+        </div>
+        <div id="quizContainer"></div>
+    </div>
+</div>
+
+<!-- 6. Teacher Resources -->
+<div class="tab-pane" id="teacherTab">
+    <h4 class="mb-3"><i class="fas fa-chalkboard-teacher" style="color:var(--re-gold)"></i> Teacher Resources</h4>
+    <div class="teacher-section">
+        <h4><i class="fas fa-bullseye"></i> Learning Objectives</h4>
+        <ul style="font-size:0.88rem">
+            <li>Understand core real estate investment terminology (cap rate, NOI, LTV, cash-on-cash return)</li>
+            <li>Calculate monthly cash flow, net operating income, and return on investment</li>
+            <li>Compare residential vs. commercial property investment characteristics</li>
+            <li>Evaluate risk factors: vacancy, maintenance, market fluctuations, leverage</li>
+            <li>Make data-driven property purchase and management decisions</li>
+            <li>Understand how mortgage financing and interest rates affect investment returns</li>
+        </ul>
+    </div>
+    <div class="teacher-section">
+        <h4><i class="fas fa-graduation-cap"></i> Standards Alignment</h4>
+        <ul style="font-size:0.88rem">
+            <li><strong>CEE National Standards:</strong> Standard 10 (Institutions), Standard 11 (Money & Inflation), Standard 12 (Interest Rates)</li>
+            <li><strong>Jump$tart Standards:</strong> Financial Responsibility, Saving & Investing, Credit & Debt</li>
+            <li><strong>Common Core Math:</strong> 7.RP.A (Ratios & Proportional Relationships), HSA-CED (Creating Equations)</li>
+            <li><strong>C3 Framework:</strong> D2.Eco.1 (Economic Decision Making), D2.Eco.6-8 (Markets)</li>
+            <li><strong>NBEA:</strong> Personal Finance standards — Real Estate, Investment Analysis</li>
+        </ul>
+    </div>
+    <div class="teacher-section">
+        <h4><i class="fas fa-lightbulb"></i> How to Teach This</h4>
+        <ul style="font-size:0.88rem">
+            <li><strong>Hook Activity (10 min):</strong> Ask students: "If you had $100,000, how would you invest it?" List responses on the board. Introduce real estate as one investment vehicle and compare to stocks, bonds, savings accounts.</li>
+            <li><strong>Guided Demo (15 min):</strong> Project the game on screen. Walk through purchasing one property together. Point out the P&L breakdown, explain each line item. Have students predict the monthly cash flow before revealing it.</li>
+            <li><strong>Pair Play (20 min):</strong> Students play in pairs, taking turns making decisions. One student is the "analyst" (calculates ratios) while the other is the "decision maker" (chooses actions). Switch roles every 6 months in-game.</li>
+            <li><strong>Think-Pair-Share:</strong> After playing 12 months, pairs discuss: "What was your best investment? Worst? Why?" Share with class. Connect to real-world examples.</li>
+            <li><strong>Scaffolding Tips:</strong> For struggling students, start with only residential properties. For advanced students, challenge them to achieve positive cash flow on every property simultaneously.</li>
+            <li><strong>Assessment Use:</strong> The built-in quiz tests vocabulary and calculation skills. Use the printable worksheet for formal assessment. Portfolio tab data can serve as evidence for performance-based assessment.</li>
+        </ul>
+    </div>
+    <div class="teacher-section">
+        <h4><i class="fas fa-comments"></i> Discussion Questions</h4>
+        <ol style="font-size:0.88rem">
+            <li>Why might a property with a higher purchase price actually be a better investment than a cheaper one?</li>
+            <li>How does leverage (using a mortgage vs. paying cash) affect both risk and potential return?</li>
+            <li>What are the advantages and disadvantages of residential vs. commercial properties?</li>
+            <li>How do interest rate changes affect real estate investors? What about renters?</li>
+            <li>Why is diversification important in a real estate portfolio? What kinds of diversification exist?</li>
+            <li>How is real estate investing different from buying stocks? What are the trade-offs?</li>
+            <li>What ethical considerations should landlords think about when setting rent prices or screening tenants?</li>
+            <li>How do local economic conditions (job growth, population changes) affect property values?</li>
+        </ol>
+    </div>
+    <div class="teacher-section">
+        <h4><i class="fas fa-book"></i> Key Vocabulary</h4>
+        <div class="row" style="font-size:0.85rem">
+            <div class="col-md-6">
+                <p><strong>Cap Rate:</strong> Net Operating Income divided by property value. Measures return independent of financing.</p>
+                <p><strong>NOI (Net Operating Income):</strong> Total income minus operating expenses (excluding mortgage payments).</p>
+                <p><strong>Cash-on-Cash Return:</strong> Annual pre-tax cash flow divided by total cash invested. Measures return on YOUR money.</p>
+                <p><strong>LTV (Loan-to-Value):</strong> Mortgage balance divided by property value. Higher LTV = more leverage = more risk.</p>
+                <p><strong>Cash Flow:</strong> Money remaining after all income is collected and all expenses (including mortgage) are paid.</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Appreciation:</strong> Increase in property value over time due to market conditions or improvements.</p>
+                <p><strong>Vacancy Rate:</strong> Percentage of time a rental unit is unoccupied. Lower is better.</p>
+                <p><strong>Equity:</strong> Property value minus mortgage balance. The portion you actually own.</p>
+                <p><strong>Refinancing:</strong> Replacing an existing mortgage with a new one, typically at a lower interest rate.</p>
+                <p><strong>Down Payment:</strong> Cash paid upfront when purchasing. Typically 20-25% for investment properties.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 7. Printable -->
+<div class="tab-pane" id="printableTab">
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <h4><i class="fas fa-print" style="color:var(--re-gold)"></i> Printable Worksheet</h4>
+        <button class="btn btn-re-primary" onclick="window.print()"><i class="fas fa-print me-1"></i> Print Worksheet</button>
+    </div>
+    <div class="no-print" style="font-size:0.85rem; color:#666; margin-bottom:16px;">
+        Preview of the printable worksheet. Click "Print" to generate a clean, printer-friendly version.
+    </div>
+    <div id="worksheetPreview" class="p-3 bg-white rounded border" style="font-size:0.9rem;"></div>
+</div>
+
+</div><!-- /tab-content -->
+
+<!-- Global Side Panel (works on any tab) -->
+<div class="side-panel hidden" id="sidePanel">
+    <div class="panel-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h3 id="panelName">Property Name</h3>
+                <div class="prop-type" id="panelType">Type</div>
+            </div>
+            <button class="btn btn-sm btn-outline-light" onclick="closePanel()"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+    <div class="panel-body" id="panelBody"></div>
+</div>
+
+<!-- Settings & Next Turn -->
+<div class="bottom-bar">
+    <label class="auto-fill-toggle" title="When enabled, vacant properties automatically find tenants within 0-2 months">
+        <input type="checkbox" id="autoFillToggle" onchange="syncAutoFill(this.checked)">
+        <span class="toggle-slider"></span>
+        <span class="toggle-label">Auto-Fill Tenants</span>
+    </label>
+    <button class="next-turn-btn" id="nextTurnBtn" onclick="nextTurn()">
+        <i class="fas fa-forward me-1"></i> Next Month
+    </button>
+</div>
+
+<!-- Event Toast -->
+<div class="event-toast" id="eventToast">
+    <h5 id="eventTitle"><i class="fas fa-bell me-1" style="color:var(--re-gold)"></i> Event</h5>
+    <p id="eventMsg"></p>
+    <button class="btn btn-sm btn-re-primary mt-2" onclick="dismissEvent()">OK</button>
+</div>
+
+<!-- Monthly Summary Toast -->
+<div class="month-toast" id="monthToast">
+    <h4><span><i class="fas fa-calendar-check"></i> <span id="msTitle">Month 2 Summary</span></span><button class="ms-close" onclick="closeMonthToast()">&times;</button></h4>
+    <div id="msBody"></div>
+</div>
+
+<!-- Learn Toast -->
+<div class="learn-toast" id="learnToast">
+    <h5><span id="learnToastTitle"></span><button class="ms-close" onclick="closeLearnToast()">&times;</button></h5>
+    <p id="learnToastContent"></p>
+</div>
+
+<!-- Learn More Popup -->
+<div class="learn-popup" id="learnPopup">
+    <div class="learn-box">
+        <h4><i class="fas fa-graduation-cap"></i> <span id="learnTitle">Learn More</span></h4>
+        <p id="learnContent"></p>
+        <button class="btn btn-re-primary mt-2" onclick="closeLearn()">Got It!</button>
+    </div>
+</div>
+
+<!-- Tutorial -->
+<div class="tutorial-overlay" id="tutorialOverlay">
+    <div class="tutorial-box">
+        <div style="font-size:3rem; margin-bottom:12px;"><i class="fas fa-city" style="color:var(--re-gold)"></i></div>
+        <h2>Welcome, Investor!</h2>
+        <p>You're starting with <strong>$100,000</strong> in cash. Your goal: build a real estate portfolio worth <strong>$1,000,000</strong>.</p>
+        <p class="mt-2" style="font-size:0.85rem">Click properties on the <strong>City Map</strong> to buy and manage them. Each turn is one month — you'll collect rent, pay expenses, and deal with real-world events. Use the <strong>Market</strong> tab to find great deals!</p>
+        <div class="mt-3 text-start" style="font-size:0.82rem; background:#f8f9fa; border-radius:10px; padding:14px 18px;">
+            <div style="font-weight:700; color:var(--re-navy); margin-bottom:6px;"><i class="fas fa-key me-1" style="color:var(--re-gold)"></i> Key Terms to Know</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px 16px; color:#555;">
+                <div><strong>Cap Rate</strong> — return on a property's value</div>
+                <div><strong>NOI</strong> — income minus operating costs</div>
+                <div><strong>Cash Flow</strong> — money left after all expenses</div>
+                <div><strong>Equity</strong> — value you actually own</div>
+                <div><strong>LTV</strong> — how leveraged you are</div>
+                <div><strong>Down Payment</strong> — upfront cash (20%)</div>
+            </div>
+            <div style="margin-top:6px; color:#888; font-size:0.78rem"><i class="fas fa-info-circle me-1"></i> Use the <strong>Guide</strong> button on the map for full definitions anytime.</div>
+        </div>
+        <p class="mt-2" style="font-size:0.82rem; color:#888">Hover over <span class="term-tip" style="cursor:default">underlined terms</span> to learn financial vocabulary.</p>
+        <button class="btn btn-re-primary btn-lg" onclick="startGame()"><i class="fas fa-play me-1"></i> Start Investing</button>
+    </div>
+</div>
+
+<!-- Printable worksheet (hidden, shown only in print) -->
+<div id="worksheet-content"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ========== GAME STATE ==========
+const G = {
+    cash: 100000,
+    month: 1,
+    properties: [],      // owned
+    allProperties: [],    // all city lots
+    marketListings: [],
+    history: { cashFlow:[], netWorth:[], income:[], expenses:[] },
+    interestRate: 6.5,
+    marketTrend: 'stable', // 'boom','stable','bust'
+    appreciation: 0.3,
+    quizAnswered: 0,
+    quizCorrect: 0,
+    started: false,
+    learnShown: {},
+    selectedPropIdx: -1,
+    autoFillTenants: false,
+    vacancyMonths: {}   // propertyIdx -> months vacant (for auto-fill delay)
+};
+
+// ========== PROPERTY DATA ==========
+const STREET_NAMES = ['Oak','Maple','Elm','Pine','Cedar','Birch','Walnut','Ash','Main','Park','Lake','River','Hill','Valley','Sunset','Spring','Market','Union','Church','School','College','Mill','Bridge','Harbor','Central','Lincoln','Washington','Jefferson','Adams','Franklin','Madison','Monroe'];
+
+// Real Austin, TX neighborhoods with coordinates for the Leaflet map
+const AUSTIN_LOCATIONS = [
+    // Downtown / Central
+    {lat:30.2672,lng:-97.7431,area:'Downtown'},{lat:30.2710,lng:-97.7395,area:'Rainey St District'},
+    {lat:30.2650,lng:-97.7500,area:'West 6th'},{lat:30.2740,lng:-97.7480,area:'Old West Austin'},
+    {lat:30.2780,lng:-97.7420,area:'Clarksville'},{lat:30.2600,lng:-97.7380,area:'SoCo'},
+    {lat:30.2550,lng:-97.7450,area:'Bouldin Creek'},{lat:30.2810,lng:-97.7360,area:'UT Area'},
+    // East Austin
+    {lat:30.2620,lng:-97.7200,area:'East Cesar Chavez'},{lat:30.2690,lng:-97.7150,area:'Holly'},
+    {lat:30.2750,lng:-97.7100,area:'Govalle'},{lat:30.2580,lng:-97.7080,area:'Montopolis'},
+    {lat:30.2830,lng:-97.7200,area:'Rosewood'},{lat:30.2900,lng:-97.7050,area:'Mueller'},
+    // South Austin
+    {lat:30.2400,lng:-97.7600,area:'Zilker'},{lat:30.2350,lng:-97.7400,area:'Travis Heights'},
+    {lat:30.2200,lng:-97.7650,area:'Barton Hills'},{lat:30.2100,lng:-97.7500,area:'Westgate'},
+    {lat:30.2250,lng:-97.7300,area:'St. Edwards'},{lat:30.2450,lng:-97.7250,area:'South Congress'},
+    // North Austin
+    {lat:30.3100,lng:-97.7400,area:'Hyde Park'},{lat:30.3200,lng:-97.7350,area:'North Loop'},
+    {lat:30.3400,lng:-97.7200,area:'Crestview'},{lat:30.3500,lng:-97.7500,area:'Allandale'},
+    {lat:30.3300,lng:-97.7100,area:'Brentwood'},{lat:30.3600,lng:-97.7300,area:'Wooten'},
+    {lat:30.3000,lng:-97.7250,area:'Hancock'},{lat:30.2950,lng:-97.7500,area:'Tarrytown'},
+    // Northwest
+    {lat:30.3700,lng:-97.7600,area:'Far West'},{lat:30.3800,lng:-97.7400,area:'North Shoal Creek'},
+    {lat:30.3950,lng:-97.7700,area:'Great Hills'},{lat:30.4100,lng:-97.7800,area:'Balcones'},
+    // East / Northeast
+    {lat:30.3100,lng:-97.6900,area:'Windsor Park'},{lat:30.3300,lng:-97.6800,area:'University Hills'},
+    {lat:30.2850,lng:-97.6950,area:'MLK'},{lat:30.3500,lng:-97.6700,area:'Pflugerville Border'},
+    // Misc spread
+    {lat:30.2500,lng:-97.7700,area:'Westlake'},{lat:30.2300,lng:-97.7100,area:'Pleasant Valley'},
+    {lat:30.2000,lng:-97.7700,area:'Oak Hill'},{lat:30.3050,lng:-97.7550,area:'Rosedale'},
+    {lat:30.2850,lng:-97.7550,area:'Old Enfield'},{lat:30.2950,lng:-97.7100,area:'Cherrywood'},
+    {lat:30.3150,lng:-97.7600,area:'Bryker Woods'},{lat:30.2450,lng:-97.7550,area:'Barton Springs'},
+    {lat:30.3400,lng:-97.7450,area:'Brentwood North'},{lat:30.2150,lng:-97.7350,area:'Galindo'},
+    {lat:30.3700,lng:-97.7100,area:'Georgian Acres'},{lat:30.2550,lng:-97.7600,area:'Zilker Park Area'}
+];
+const TYPES = {
+    house:     {label:'Single-Family Home', icon:'fa-house',    color:'#3498db', minPrice:120000, maxPrice:220000, rentMult:0.007, beds:'2-4', sqft:[900,1800], risk:0.15, repairCost:[300,1200], category:'residential'},
+    duplex:    {label:'Duplex',             icon:'fa-building',  color:'#2980b9', minPrice:180000, maxPrice:320000, rentMult:0.0065,beds:'2x2', sqft:[1400,2400], risk:0.18, repairCost:[400,1800], category:'residential'},
+    apartment: {label:'Apartment (4-unit)', icon:'fa-hotel',     color:'#1a5276', minPrice:350000, maxPrice:600000, rentMult:0.006, beds:'4x2', sqft:[3000,5000], risk:0.20, repairCost:[600,2500], category:'residential'},
+    shop:      {label:'Retail Shop',        icon:'fa-store',     color:'#e67e22', minPrice:150000, maxPrice:300000, rentMult:0.008, beds:'N/A', sqft:[800,2000],  risk:0.25, repairCost:[500,2000], category:'commercial'},
+    office:    {label:'Office Space',       icon:'fa-building-columns',color:'#d35400', minPrice:250000, maxPrice:500000, rentMult:0.0075,beds:'N/A', sqft:[1500,4000], risk:0.22, repairCost:[600,2200], category:'commercial'}
+};
+const TYPE_KEYS = Object.keys(TYPES);
+
+// ========== INIT CITY ==========
+const GRID_COLS = 8, GRID_ROWS = 6;
+function initCity(){
+    G.allProperties = [];
+    // Shuffle Austin locations
+    const locs = [...AUSTIN_LOCATIONS].sort(()=>Math.random()-0.5);
+    for(let r=0; r<GRID_ROWS; r++){
+        for(let c=0; c<GRID_COLS; c++){
+            const idx = r*GRID_COLS + c;
+            const tk = TYPE_KEYS[Math.floor(Math.random()*TYPE_KEYS.length)];
+            const t = TYPES[tk];
+            const price = Math.round((t.minPrice + Math.random()*(t.maxPrice-t.minPrice))/1000)*1000;
+            const sqft = Math.round(t.sqft[0] + Math.random()*(t.sqft[1]-t.sqft[0]));
+            const loc = locs[idx % locs.length];
+            const street = STREET_NAMES[Math.floor(Math.random()*STREET_NAMES.length)];
+            const num = 100 + Math.floor(Math.random()*900);
+            // Jitter coordinates slightly so markers don't overlap
+            const jLat = loc.lat + (Math.random()-0.5)*0.004;
+            const jLng = loc.lng + (Math.random()-0.5)*0.004;
+            G.allProperties.push({
+                row:r, col:c, type:tk, name:`${num} ${street} St`,
+                neighborhood: loc.area,
+                lat: jLat, lng: jLng,
+                price, currentValue:price, sqft,
+                monthlyRent: Math.round(price * t.rentMult),
+                owned:false, tenant:null, condition:85+Math.floor(Math.random()*16),
+                mortgageBalance:0, mortgagePayment:0, mortgageRate:0,
+                monthsOwned:0, totalIncome:0, totalExpenses:0,
+                leaseMonths:0, available:Math.random()>0.25
+            });
+        }
+    }
+    refreshMarket();
+}
+
+// ========== CANVAS DRAWING ==========
+let canvas, ctx;
+const CELL_W = 110, CELL_H = 100, ROAD_W = 14, PAD = 30;
+
+function initCanvas(){
+    canvas = document.getElementById('cityCanvas');
+    const container = canvas.parentElement;
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    ctx = canvas.getContext('2d');
+    canvas.addEventListener('click', onCanvasClick);
+    window.addEventListener('resize', ()=>{
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        drawCity();
+    });
+}
+
+function drawCity(){
+    if(!ctx) return;
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = '#c8d6c5'; ctx.fillRect(0,0,W,H);
+    const totalW = GRID_COLS*CELL_W + (GRID_COLS-1)*ROAD_W;
+    const totalH = GRID_ROWS*CELL_H + (GRID_ROWS-1)*ROAD_W;
+    const ox = (W - totalW)/2, oy = (H - totalH)/2;
+
+    // Roads
+    ctx.fillStyle = '#888';
+    for(let r=0; r<GRID_ROWS-1; r++){
+        const y = oy + (r+1)*CELL_H + r*ROAD_W;
+        ctx.fillRect(ox-10, y, totalW+20, ROAD_W);
+        // road lines
+        ctx.strokeStyle='#ffeb3b'; ctx.lineWidth=1; ctx.setLineDash([8,6]);
+        ctx.beginPath(); ctx.moveTo(ox-10, y+ROAD_W/2); ctx.lineTo(ox+totalW+10, y+ROAD_W/2); ctx.stroke();
+        ctx.setLineDash([]);
+    }
+    for(let c=0; c<GRID_COLS-1; c++){
+        const x = ox + (c+1)*CELL_W + c*ROAD_W;
+        ctx.fillRect(x, oy-10, ROAD_W, totalH+20);
+        ctx.strokeStyle='#ffeb3b'; ctx.lineWidth=1; ctx.setLineDash([8,6]);
+        ctx.beginPath(); ctx.moveTo(x+ROAD_W/2, oy-10); ctx.lineTo(x+ROAD_W/2, oy+totalH+10); ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    // Properties
+    G.allProperties.forEach((p,i)=>{
+        const x = ox + p.col*(CELL_W+ROAD_W);
+        const y = oy + p.row*(CELL_H+ROAD_W);
+        const t = TYPES[p.type];
+        // Lot bg with grass
+        ctx.fillStyle = '#c8d8c0';
+        ctx.fillRect(x, y, CELL_W, CELL_H);
+        ctx.fillStyle = '#bdd0b4';
+        ctx.fillRect(x+2, y+2, CELL_W-4, CELL_H-4);
+        // Building color
+        let bColor;
+        if(p.owned){
+            bColor = t.category==='commercial' ? '#d35400' : '#2471a3';
+        } else if(p.available){
+            bColor = '#229954';
+        } else {
+            bColor = '#7f8c8d';
+        }
+        const bx = x+10, by = y+14, bw = CELL_W-20, bh = CELL_H-32;
+        // Building shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.12)';
+        ctx.fillRect(bx+3, by+3, bw, bh);
+        // Building body
+        ctx.fillStyle = bColor;
+        ctx.fillRect(bx, by, bw, bh);
+        // Building gradient overlay
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(bx, by, bw, bh/2);
+        // Roof
+        ctx.fillStyle = darken(bColor, 40);
+        if(p.type==='house' || p.type==='duplex'){
+            ctx.beginPath(); ctx.moveTo(bx-5,by); ctx.lineTo(bx+bw/2,by-14); ctx.lineTo(bx+bw+5,by); ctx.closePath(); ctx.fill();
+            // Chimney for houses
+            if(p.type==='house'){ ctx.fillStyle=darken(bColor,60); ctx.fillRect(bx+bw-14,by-18,6,10); }
+        } else {
+            // Flat roof for apartments/commercial
+            ctx.fillRect(bx-2, by-4, bw+4, 6);
+        }
+        // Windows - bigger
+        ctx.fillStyle = p.owned ? '#ffe066' : '#ffffcc';
+        const wSize = 10, wGap = 5;
+        const numWx = p.type==='apartment'||p.type==='office' ? 4 : p.type==='duplex' ? 3 : 2;
+        const wxStart = bx + (bw - numWx*(wSize+wGap)+wGap)/2;
+        for(let wi=0;wi<numWx;wi++){
+            ctx.fillRect(wxStart+wi*(wSize+wGap), by+8, wSize, wSize);
+            if(bh>40) ctx.fillRect(wxStart+wi*(wSize+wGap), by+24, wSize, wSize);
+        }
+        // Door
+        ctx.fillStyle = darken(bColor,50);
+        const dw = p.type==='shop' ? 14 : 8;
+        ctx.fillRect(bx+bw/2-dw/2, by+bh-14, dw, 14);
+        // Shop awning
+        if(p.type==='shop'){
+            ctx.fillStyle='#e74c3c'; ctx.fillRect(bx+2,by+bh-22,bw-4,4);
+            ctx.fillStyle='#c0392b'; ctx.fillRect(bx+2,by+bh-18,bw-4,2);
+        }
+        // Type label with background
+        const shortType = p.type==='house'?'House':p.type==='duplex'?'Duplex':p.type==='apartment'?'Apt 4-unit':p.type==='shop'?'Shop':'Office';
+        ctx.font = 'bold 11px Inter,sans-serif'; ctx.textAlign='center';
+        const tw = ctx.measureText(shortType).width;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(x+CELL_W/2-tw/2-4, y+CELL_H-16, tw+8, 14);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(shortType, x+CELL_W/2, y+CELL_H-5);
+        // Status icons - bigger
+        if(p.owned){
+            if(!p.tenant){
+                if(Math.floor(Date.now()/500)%2===0){
+                    ctx.fillStyle='rgba(231,76,60,0.9)'; ctx.beginPath(); ctx.arc(x+CELL_W-14,y+14,8,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle='#fff'; ctx.font='bold 10px Inter'; ctx.fillText('V',x+CELL_W-14,y+18);
+                }
+            }
+            if(p.condition<50){
+                ctx.fillStyle='rgba(243,156,18,0.9)'; ctx.beginPath(); ctx.arc(x+14,y+14,8,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#fff'; ctx.font='bold 11px Inter'; ctx.fillText('!',x+14,y+18);
+            }
+            if(p.tenant && p.condition>=50){
+                ctx.fillStyle='rgba(46,204,113,0.9)'; ctx.beginPath(); ctx.arc(x+CELL_W-14,y+14,8,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#fff'; ctx.font='bold 10px Inter'; ctx.fillText('✓',x+CELL_W-14,y+18);
+            }
+            // Owned border glow
+            ctx.strokeStyle = bColor; ctx.lineWidth=3;
+            ctx.strokeRect(x+1,y+1,CELL_W-2,CELL_H-2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth=1;
+            ctx.strokeRect(x+3,y+3,CELL_W-6,CELL_H-6);
+        }
+        // Selection highlight
+        if(i===G.selectedPropIdx){
+            ctx.strokeStyle = '#ffd700'; ctx.lineWidth=4;
+            ctx.strokeRect(x-1,y-1,CELL_W+2,CELL_H+2);
+        }
+    });
+}
+
+function darken(hex,amt){
+    let r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    r=Math.max(0,r-amt); g=Math.max(0,g-amt); b=Math.max(0,b-amt);
+    return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function onCanvasClick(e){
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const W = canvas.width, H = canvas.height;
+    const totalW = GRID_COLS*CELL_W + (GRID_COLS-1)*ROAD_W;
+    const totalH = GRID_ROWS*CELL_H + (GRID_ROWS-1)*ROAD_W;
+    const ox = (W - totalW)/2, oy = (H - totalH)/2;
+    for(let i=0;i<G.allProperties.length;i++){
+        const p=G.allProperties[i];
+        const x=ox+p.col*(CELL_W+ROAD_W), y=oy+p.row*(CELL_H+ROAD_W);
+        if(mx>=x && mx<=x+CELL_W && my>=y && my<=y+CELL_H){
+            G.selectedPropIdx = i;
+            showPropertyPanel(i);
+            drawCity();
+            return;
+        }
+    }
+}
+
+// ========== PROPERTY PANEL ==========
+function showPropertyPanel(idx){
+    const p = G.allProperties[idx];
+    const t = TYPES[p.type];
+    const panel = document.getElementById('sidePanel');
+    panel.classList.remove('hidden');
+    document.getElementById('panelName').textContent = p.name;
+    document.getElementById('panelType').innerHTML = `<i class="fas ${t.icon} me-1"></i>${t.label} | ${p.sqft.toLocaleString()} sqft` + (p.neighborhood ? `<br><i class="fas fa-map-marker-alt me-1" style="color:var(--re-gold)"></i>${p.neighborhood}, Austin TX` : '');
+    const body = document.getElementById('panelBody');
+    let html = '';
+    if(p.owned){
+        const equity = p.currentValue - p.mortgageBalance;
+        const monthCF = p.tenant ? p.monthlyRent - p.mortgagePayment - estimateExpenses(p) : -p.mortgagePayment - estimateExpenses(p);
+        const noi = (p.monthlyRent * 12) - (estimateExpenses(p)*12);
+        const capRate = p.currentValue>0 ? ((noi / p.currentValue)*100).toFixed(1) : '0.0';
+        html += `<div class="detail-row"><span class="label">Purchase Price</span><span class="value">${fmt(p.price)}</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Current Value: What this property is worth today on the market. Changes with appreciation and market conditions.">Current Value</span></span><span class="value">${fmt(p.currentValue)}</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Equity: The portion of the property you actually own. Equity = Property Value minus Mortgage Balance.">Equity</span></span><span class="value positive">${fmt(equity)}</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Mortgage Balance: How much you still owe the bank. Decreases each month as you make payments.">Mortgage Balance</span></span><span class="value">${p.mortgageBalance>0?fmt(p.mortgageBalance):'Paid Off'}</span></div>`;
+        if(p.mortgageBalance>0) html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Mortgage Payment: Your fixed monthly payment to the bank, covering principal (loan paydown) and interest (borrowing cost).">Mortgage Payment</span></span><span class="value">${fmt(p.mortgagePayment)}/mo</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Monthly Rent: Income collected from your tenant each month. This is your primary revenue source.">Monthly Rent</span></span><span class="value positive">${fmt(p.monthlyRent)}/mo</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Operating Expenses: Ongoing costs like taxes, insurance, and maintenance. Higher when property condition is lower.">Est. Expenses</span></span><span class="value negative">-${fmt(estimateExpenses(p))}/mo</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Cash Flow: Money left after all income and expenses. Positive = profit, Negative = losing money each month.">Monthly Cash Flow</span></span><span class="value ${monthCF>=0?'positive':'negative'}">${monthCF>=0?'+':''}${fmt(monthCF)}/mo</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Cap Rate = Annual NOI / Property Value. Measures return independent of how you financed it. Higher = better return.">Cap Rate</span></span><span class="value">${capRate}%</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Tenant: The person or business renting your property. Good tenants pay on time and take care of the property.">Tenant</span></span><span class="value">${p.tenant?p.tenant.name+' ('+p.tenant.quality+')':'<span style="color:var(--re-red)">Vacant</span>'}</span></div>`;
+        if(p.tenant) html += `<div class="detail-row"><span class="label">Lease Remaining</span><span class="value">${p.leaseMonths} months</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Condition: Physical state of the property (0-100%). Low condition increases expenses and makes tenants leave. Repair to improve.">Condition</span></span><span class="value">${Math.round(p.condition)}%</span></div>`;
+        html += `<div class="condition-bar"><div class="condition-fill" style="width:${Math.round(p.condition)}%;background:${p.condition>70?'var(--re-green)':p.condition>40?'var(--re-orange)':'var(--re-red)'}"></div></div>`;
+        html += `<div class="detail-row"><span class="label">Months Owned</span><span class="value">${p.monthsOwned}</span></div>`;
+        html += `<div class="action-btns">`;
+        html += `<button class="btn btn-re-outline" onclick="repairProperty(${idx})"><i class="fas fa-wrench me-1"></i>Repair</button>`;
+        if(!p.tenant) html += `<button class="btn btn-re-primary" onclick="findTenant(${idx})"><i class="fas fa-user-plus me-1"></i>Find Tenant</button>`;
+        if(p.tenant) html += `<button class="btn btn-re-outline" onclick="raiseRent(${idx})"><i class="fas fa-arrow-up me-1"></i>Raise Rent</button>`;
+        if(p.tenant) html += `<button class="btn btn-re-danger" onclick="evictTenant(${idx})"><i class="fas fa-user-minus me-1"></i>Evict</button>`;
+        if(p.mortgageBalance>0) html += `<button class="btn btn-re-outline" onclick="refinance(${idx})"><i class="fas fa-sync me-1"></i>Refinance</button>`;
+        html += `<button class="btn btn-re-danger" onclick="sellProperty(${idx})"><i class="fas fa-tag me-1"></i>Sell</button>`;
+        html += `</div>`;
+    } else if(p.available) {
+        const downPay = Math.round(p.price * 0.20);
+        const mortgage = p.price - downPay;
+        const monthlyMort = calcMortgage(mortgage, G.interestRate, 30);
+        const estExpenses = Math.round(p.monthlyRent * 0.15);
+        const estCF = p.monthlyRent - monthlyMort - estExpenses;
+        const noi = (p.monthlyRent*12) - (estExpenses*12);
+        const capRate = ((noi/p.price)*100).toFixed(1);
+        html += `<div class="alert alert-success py-2 px-3 mb-3" style="font-size:0.82rem"><i class="fas fa-tag me-1"></i> <strong>For Sale</strong></div>`;
+        html += `<div class="detail-row"><span class="label">Asking Price</span><span class="value" style="font-size:1.1rem;color:var(--re-navy)">${fmt(p.price)}</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Down Payment: Cash you pay upfront, typically 20% for investment properties.">Down Payment</span> (20%)</span><span class="value">${fmt(downPay)}</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Mortgage Amount: The portion you borrow from the bank (purchase price minus down payment).">Mortgage Amount</span></span><span class="value">${fmt(mortgage)}</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Mortgage Payment: Fixed monthly payment to the bank over 30 years, including principal and interest.">Mortgage Payment</span></span><span class="value">${fmt(monthlyMort)}/mo @ ${G.interestRate}%</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Estimated Rent: What you can expect to charge tenants per month based on the property type and value.">Est. Monthly Rent</span></span><span class="value positive">${fmt(p.monthlyRent)}/mo</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Operating Expenses: Ongoing costs for taxes, insurance, maintenance — typically about 15% of rent.">Est. Expenses</span></span><span class="value negative">-${fmt(estExpenses)}/mo</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Cash Flow: Rent minus mortgage minus expenses. Positive = profit each month. Negative = losing money.">Est. Cash Flow</span></span><span class="value ${estCF>=0?'positive':'negative'}">${estCF>=0?'+':''}${fmt(estCF)}/mo</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Cap Rate = Annual NOI / Purchase Price. Measures return independent of financing. Higher = better return.">Cap Rate</span></span><span class="value">${capRate}%</span></div>`;
+        html += `<div class="detail-row"><span class="label"><span class="term-tip" data-bs-toggle="tooltip" title="Condition: Physical state of the property (0-100%). Low condition means higher expenses and repair costs.">Condition</span></span><span class="value">${Math.round(p.condition)}%</span></div>`;
+        html += `<div class="condition-bar"><div class="condition-fill" style="width:${Math.round(p.condition)}%;background:${p.condition>70?'var(--re-green)':p.condition>40?'var(--re-orange)':'var(--re-red)'}"></div></div>`;
+        html += `<div class="action-btns mt-3">`;
+        if(G.cash >= downPay){
+            html += `<button class="btn btn-re-primary btn-lg w-100" onclick="buyProperty(${idx})"><i class="fas fa-handshake me-1"></i> Purchase Property (${fmt(downPay)} down)</button>`;
+        } else {
+            html += `<button class="btn btn-secondary btn-lg w-100" disabled><i class="fas fa-lock me-1"></i> Need ${fmt(downPay)} (you have ${fmt(G.cash)})</button>`;
+        }
+        html += `</div>`;
+    } else {
+        html += `<div class="alert alert-secondary py-2 px-3" style="font-size:0.82rem"><i class="fas fa-lock me-1"></i> This property is not currently for sale.</div>`;
+        html += `<div class="detail-row"><span class="label">Estimated Value</span><span class="value">${fmt(p.currentValue)}</span></div>`;
+        html += `<div class="detail-row"><span class="label">Type</span><span class="value">${t.label}</span></div>`;
+    }
+    body.innerHTML = html;
+    initTooltips();
+}
+
+function closePanel(){
+    document.getElementById('sidePanel').classList.add('hidden');
+    G.selectedPropIdx = -1;
+    drawCity();
+    if(austinMap) updateAustinMarkers();
+}
+
+// ========== ACTIONS ==========
+function syncAutoFill(val){
+    G.autoFillTenants = val;
+    document.getElementById('autoFillToggle').checked = val;
+    document.getElementById('mdAutoFill').checked = val;
+}
+function refreshViews(){ drawCity(); if(austinMap) updateAustinMarkers(); }
+
+function buyProperty(idx){
+    const p = G.allProperties[idx];
+    const downPay = Math.round(p.price * 0.20);
+    if(G.cash < downPay) return;
+    G.cash -= downPay;
+    p.owned = true;
+    p.available = false;
+    const mortgage = p.price - downPay;
+    p.mortgageBalance = mortgage;
+    p.mortgageRate = G.interestRate;
+    p.mortgagePayment = calcMortgage(mortgage, G.interestRate, 30);
+    p.monthsOwned = 0;
+    G.properties.push(p);
+    showPropertyPanel(idx);
+    updateHeader();
+    refreshViews();
+    if(!G.learnShown.mortgage){
+        showLearn('Mortgage Financing','When you buy an investment property, you typically put down 20% of the purchase price and borrow the rest from a bank. This is called "leverage" — you\'re using borrowed money to control a more valuable asset. Your mortgage payment includes both principal (paying down the loan) and interest (the cost of borrowing). A 30-year fixed-rate mortgage means the payment stays the same for 30 years.');
+        G.learnShown.mortgage=true;
+    } else {
+        // Nudge: property is vacant, you need a tenant!
+        showEvent('Property Purchased!', `${p.name} is now yours! But it's VACANT — you're paying ${fmt(p.mortgagePayment)}/mo in mortgage with no income. Click "Find Tenant" immediately to start earning rent!`);
+    }
+}
+
+function sellProperty(idx){
+    const p = G.allProperties[idx];
+    if(!p.owned) return;
+    const salePrice = p.currentValue;
+    const proceeds = salePrice - p.mortgageBalance;
+    const commissionRate = 0.06;
+    const commission = Math.round(salePrice * commissionRate);
+    const net = proceeds - commission;
+    if(confirm(`Sell ${p.name} for ${fmt(salePrice)}?\n\nMortgage payoff: ${fmt(p.mortgageBalance)}\nCommission (6%): ${fmt(commission)}\nNet proceeds: ${fmt(net)}`)){
+        G.cash += net;
+        p.owned = false;
+        p.tenant = null;
+        p.mortgageBalance = 0;
+        p.mortgagePayment = 0;
+        p.available = false; // sold to someone else
+        G.properties = G.properties.filter(x => x !== p);
+        closePanel();
+        updateHeader();
+        refreshViews();
+    }
+}
+
+function repairProperty(idx){
+    const p = G.allProperties[idx];
+    const t = TYPES[p.type];
+    const cost = Math.round(t.repairCost[0] + Math.random()*(t.repairCost[1]-t.repairCost[0]));
+    if(G.cash < cost){ showEvent('Not Enough Cash',`Repairs would cost ${fmt(cost)} but you only have ${fmt(G.cash)}.`); return; }
+    if(p.condition >= 95){ showEvent('Good Condition',`This property is already in excellent condition (${Math.round(p.condition)}%).`); return; }
+    G.cash -= cost;
+    p.condition = Math.min(100, p.condition + 30 + Math.floor(Math.random()*15));
+    p.totalExpenses += cost;
+    showEvent('Repairs Complete',`${p.name} has been repaired for ${fmt(cost)}. Condition is now ${Math.round(p.condition)}%.`);
+    showPropertyPanel(idx);
+    updateHeader();
+}
+
+function findTenant(idx){
+    const p = G.allProperties[idx];
+    if(p.tenant) return;
+    const quality = Math.random();
+    let tenant;
+    const firstNames = ['Alex','Jordan','Sam','Taylor','Morgan','Casey','Riley','Jamie','Quinn','Avery'];
+    const lastNames = ['Johnson','Smith','Williams','Brown','Davis','Miller','Wilson','Moore','Clark','Lee'];
+    const name = firstNames[Math.floor(Math.random()*firstNames.length)] + ' ' + lastNames[Math.floor(Math.random()*lastNames.length)].charAt(0) + '.';
+    if(quality > 0.6){
+        tenant = {name, quality:'Good', payChance:0.95, damageChance:0.05};
+    } else if(quality > 0.25){
+        tenant = {name, quality:'Average', payChance:0.85, damageChance:0.12};
+    } else {
+        tenant = {name, quality:'Risky', payChance:0.70, damageChance:0.20};
+    }
+    p.tenant = tenant;
+    p.leaseMonths = 6 + Math.floor(Math.random()*7); // 6-12
+    showPropertyPanel(idx);
+    updateHeader();
+    refreshViews();
+    if(!G.learnShown.tenants){ showLearn('Tenant Screening','Choosing the right tenant is one of the most important decisions a landlord makes. Good tenants pay on time, take care of the property, and stay for longer lease terms. "Risky" tenants may miss payments or cause property damage. In real life, landlords check credit scores, employment history, and references. There are also fair housing laws that prevent discrimination in tenant selection.'); G.learnShown.tenants=true; }
+}
+
+function raiseRent(idx){
+    const p = G.allProperties[idx];
+    if(!p.tenant) return;
+    const increase = Math.round(p.monthlyRent * 0.05);
+    const leaveChance = p.tenant.quality==='Good'?0.15:p.tenant.quality==='Average'?0.30:0.50;
+    if(Math.random() < leaveChance){
+        showEvent('Tenant Left!',`${p.tenant.name} decided not to renew after the rent increase. The unit at ${p.name} is now vacant.`);
+        p.tenant = null;
+        p.leaseMonths = 0;
+    } else {
+        p.monthlyRent += increase;
+        showEvent('Rent Raised',`Rent at ${p.name} increased by ${fmt(increase)} to ${fmt(p.monthlyRent)}/mo. Tenant accepted!`);
+    }
+    showPropertyPanel(idx);
+    updateHeader();
+    refreshViews();
+}
+
+function evictTenant(idx){
+    const p = G.allProperties[idx];
+    if(!p.tenant) return;
+    const cost = 500 + Math.floor(Math.random()*1000);
+    if(confirm(`Evict ${p.tenant.name}? This will cost approximately ${fmt(cost)} in legal/administrative fees.`)){
+        G.cash -= cost;
+        p.totalExpenses += cost;
+        p.tenant = null;
+        p.leaseMonths = 0;
+        showEvent('Tenant Evicted',`${p.name} is now vacant. Eviction cost: ${fmt(cost)}.`);
+        showPropertyPanel(idx);
+        updateHeader();
+        refreshViews();
+    }
+}
+
+function refinance(idx){
+    const p = G.allProperties[idx];
+    if(p.mortgageBalance <= 0) return;
+    const closingCost = Math.round(p.mortgageBalance * 0.02);
+    const newRate = G.interestRate;
+    const oldPayment = p.mortgagePayment;
+    const newPayment = calcMortgage(p.mortgageBalance, newRate, 30);
+    const savings = oldPayment - newPayment;
+    if(savings <= 0){ showEvent('Refinance Not Beneficial',`Current rate (${p.mortgageRate}%) is already at or below market rate (${newRate}%). Refinancing would not save money.`); return; }
+    if(G.cash < closingCost){ showEvent('Not Enough Cash',`Refinancing closing costs are ${fmt(closingCost)} but you only have ${fmt(G.cash)}.`); return; }
+    if(confirm(`Refinance ${p.name}?\n\nOld rate: ${p.mortgageRate}% → New rate: ${newRate}%\nOld payment: ${fmt(oldPayment)} → New payment: ${fmt(newPayment)}\nMonthly savings: ${fmt(savings)}\nClosing costs: ${fmt(closingCost)}`)){
+        G.cash -= closingCost;
+        p.mortgageRate = newRate;
+        p.mortgagePayment = newPayment;
+        p.totalExpenses += closingCost;
+        showEvent('Refinanced!',`${p.name} refinanced to ${newRate}%. Saving ${fmt(savings)}/month!`);
+        showPropertyPanel(idx);
+        updateHeader();
+        if(!G.learnShown.refinance){ showLearn('Refinancing','Refinancing means replacing your current mortgage with a new one — usually to get a lower interest rate. This reduces your monthly payment, improving cash flow. However, refinancing has closing costs (typically 2% of the loan), so it only makes sense when the rate difference is significant enough to recover those costs over time.'); G.learnShown.refinance=true; }
+    }
+}
+
+// ========== TURN ENGINE ==========
+function nextTurn(){
+    if(!G.started) return;
+    G.month++;
+    let totalIncome=0, totalExpenses=0, totalMortgage=0, totalOpEx=0;
+    const propDetails = []; // per-property breakdown
+    const vacantProps = [];
+    let missedRents = [];
+
+    G.properties.forEach(p=>{
+        p.monthsOwned++;
+        let pIncome=0, pMort=0, pOpEx=0, rentCollected=false;
+        // Rent collection
+        if(p.tenant){
+            if(Math.random() < p.tenant.payChance){
+                G.cash += p.monthlyRent;
+                p.totalIncome += p.monthlyRent;
+                totalIncome += p.monthlyRent;
+                pIncome = p.monthlyRent;
+                rentCollected = true;
+            } else {
+                missedRents.push(p.name);
+            }
+            p.leaseMonths--;
+            if(p.leaseMonths <= 0){
+                if(Math.random()>0.3){
+                    p.leaseMonths = 6+Math.floor(Math.random()*7);
+                } else {
+                    p.tenant = null;
+                }
+            }
+        } else {
+            vacantProps.push(p.name);
+        }
+        // Mortgage
+        if(p.mortgagePayment>0){
+            G.cash -= p.mortgagePayment;
+            p.totalExpenses += p.mortgagePayment;
+            totalExpenses += p.mortgagePayment;
+            totalMortgage += p.mortgagePayment;
+            pMort = p.mortgagePayment;
+            const interestPortion = (p.mortgageBalance * (p.mortgageRate/100))/12;
+            const principalPortion = p.mortgagePayment - interestPortion;
+            p.mortgageBalance = Math.max(0, p.mortgageBalance - principalPortion);
+            if(p.mortgageBalance<100) { p.mortgageBalance=0; p.mortgagePayment=0; }
+        }
+        // Operating expenses
+        const opEx = estimateExpenses(p);
+        G.cash -= opEx;
+        p.totalExpenses += opEx;
+        totalExpenses += opEx;
+        totalOpEx += opEx;
+        pOpEx = opEx;
+        // Condition degradation (gentle — ~2-4% per year natural wear)
+        p.condition = Math.max(0, p.condition - (0.15 + Math.random()*0.2));
+        if(p.tenant && p.tenant.damageChance > Math.random()){
+            p.condition = Math.max(0, p.condition - (1+Math.random()*2));
+        }
+        // Appreciation
+        const appRate = G.appreciation/100 + (Math.random()-0.5)*0.004;
+        p.currentValue = Math.round(p.currentValue * (1 + appRate));
+        propDetails.push({name:p.name, income:pIncome, mortgage:pMort, opEx:pOpEx, net:pIncome-pMort-pOpEx, vacant:!p.tenant, rentCollected});
+    });
+
+    // Auto-fill tenants (if setting enabled)
+    if(G.autoFillTenants){
+        G.properties.forEach((p,i)=>{
+            const idx = G.allProperties.indexOf(p);
+            if(!p.tenant){
+                G.vacancyMonths[idx] = (G.vacancyMonths[idx]||0) + 1;
+                const waitMonths = Math.floor(Math.random()*3); // 0, 1, or 2 months
+                if(G.vacancyMonths[idx] > waitMonths){
+                    // Auto-assign a tenant (same logic as findTenant)
+                    const quality = Math.random();
+                    const firstNames = ['Alex','Jordan','Sam','Taylor','Morgan','Casey','Riley','Jamie','Quinn','Avery'];
+                    const lastNames = ['Johnson','Smith','Williams','Brown','Davis','Miller','Wilson','Moore','Clark','Lee'];
+                    const name = firstNames[Math.floor(Math.random()*firstNames.length)] + ' ' + lastNames[Math.floor(Math.random()*lastNames.length)].charAt(0) + '.';
+                    let tenant;
+                    if(quality > 0.6) tenant = {name, quality:'Good', payChance:0.95, damageChance:0.05};
+                    else if(quality > 0.25) tenant = {name, quality:'Average', payChance:0.85, damageChance:0.12};
+                    else tenant = {name, quality:'Risky', payChance:0.70, damageChance:0.20};
+                    p.tenant = tenant;
+                    p.leaseMonths = 6 + Math.floor(Math.random()*7);
+                    delete G.vacancyMonths[idx];
+                }
+            } else {
+                delete G.vacancyMonths[idx];
+            }
+        });
+    }
+
+    // Random event (15% chance)
+    if(Math.random()<0.15 && G.properties.length>0){
+        triggerRandomEvent();
+    }
+
+    // Market shifts (every 6 months)
+    if(G.month % 6 === 0){
+        shiftMarket();
+    }
+
+    // Make some unavailable properties become available
+    G.allProperties.forEach(p=>{
+        if(!p.owned && !p.available && Math.random()<0.08) p.available = true;
+    });
+
+    // Record history
+    const netCF = totalIncome - totalExpenses;
+    G.history.cashFlow.push(netCF);
+    G.history.netWorth.push(calcNetWorth());
+    G.history.income.push(totalIncome);
+    G.history.expenses.push(totalExpenses);
+
+    updateHeader();
+    refreshViews();
+    if(G.selectedPropIdx >= 0) showPropertyPanel(G.selectedPropIdx);
+    updateCharts();
+    refreshMarket();
+    renderPortfolio();
+
+    // Show monthly summary toast (non-blocking)
+    if(G.properties.length > 0){
+        showMonthSummary(totalIncome, totalMortgage, totalOpEx, netCF, propDetails, vacantProps, missedRents);
+    }
+
+    // Win check
+    if(calcNetWorth() >= 1000000){
+        showEvent('Congratulations! 🏆',`You've reached $1,000,000 in net worth in ${G.month} months! You are a real estate mogul! Final portfolio: ${G.properties.length} properties, ${fmt(calcNetWorth())} net worth.`);
+    }
+
+    // Show educational tips as non-blocking toasts (delayed so summary shows first)
+    if(netCF < 0 && !G.learnShown.negativeCF){
+        G.learnShown.negativeCF = true;
+        setTimeout(()=>showLearnToast('Negative Cash Flow','This month you spent more than you earned — negative cash flow. Properties are vacant (no rent) but you still owe mortgage + expenses. Fix: find tenants ASAP, or sell properties you can\'t fill.'), 2000);
+    } else if(G.cash < 10000 && G.properties.length > 0 && !G.learnShown.lowCash){
+        G.learnShown.lowCash = true;
+        setTimeout(()=>showLearnToast('Low Cash Warning','Your cash reserves are dangerously low. You need cash for emergency repairs and mortgage during vacancies. Consider selling an underperforming property to rebuild reserves.'), 2000);
+    }
+}
+
+let monthToastTimer = null;
+function showMonthSummary(income, mortgage, opEx, net, details, vacantProps, missedRents){
+    document.getElementById('msTitle').textContent = `Month ${G.month} Summary`;
+    let html = '';
+    html += `<div class="ms-row"><span class="ms-label"><i class="fas fa-arrow-down me-1" style="color:var(--re-green)"></i>Rent</span><span class="ms-val pos">${income>0?'+':''}${fmt(income)}</span></div>`;
+    html += `<div class="ms-row"><span class="ms-label"><i class="fas fa-university me-1" style="color:var(--re-blue)"></i>Mortgage</span><span class="ms-val neg">-${fmt(mortgage)}</span></div>`;
+    html += `<div class="ms-row"><span class="ms-label"><i class="fas fa-tools me-1" style="color:var(--re-orange)"></i>Expenses</span><span class="ms-val neg">-${fmt(opEx)}</span></div>`;
+    html += `<div class="ms-row ms-total"><span class="ms-label">${net>=0?'Profit':'Loss'}</span><span class="ms-val ${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmt(net)}</span></div>`;
+    html += `<div class="ms-row" style="border-bottom:none"><span class="ms-label">Cash</span><span class="ms-val" style="color:${G.cash>=0?'var(--re-navy)':'var(--re-red)'}">${fmt(G.cash)}</span></div>`;
+
+    if(details.length > 0){
+        html += `<div style="margin-top:8px;font-size:0.75rem;font-weight:700;color:var(--re-navy)">Properties:</div>`;
+        details.forEach(d=>{
+            const icon = d.vacant ? '<i class="fas fa-exclamation-triangle" style="color:var(--re-red)"></i>' : (d.net>=0 ? '<i class="fas fa-check-circle" style="color:var(--re-green)"></i>' : '<i class="fas fa-arrow-trend-down" style="color:var(--re-orange)"></i>');
+            html += `<div class="ms-row" style="font-size:0.75rem"><span class="ms-label">${icon} ${d.name}</span><span class="ms-val ${d.net>=0?'pos':'neg'}">${d.net>=0?'+':''}${fmt(d.net)}${d.vacant?' <span style="color:var(--re-red)">(VACANT)</span>':''}</span></div>`;
+        });
+    }
+
+    if(vacantProps.length > 0){
+        const vacantCost = details.filter(d=>d.vacant).reduce((s,d)=>s+Math.abs(d.net),0);
+        html += `<div class="ms-alert danger"><i class="fas fa-exclamation-circle"></i><strong>${vacantProps.length} vacant</strong> — losing ${fmt(vacantCost)}/mo. Find tenants!</div>`;
+    }
+    if(missedRents.length > 0){
+        html += `<div class="ms-alert warning"><i class="fas fa-exclamation-triangle"></i>Missed rent at ${missedRents.join(', ')}</div>`;
+    }
+    if(net > 0 && vacantProps.length === 0){
+        html += `<div class="ms-alert success"><i class="fas fa-thumbs-up"></i>All occupied & profitable!</div>`;
+    }
+
+    const toast = document.getElementById('monthToast');
+    document.getElementById('msBody').innerHTML = html;
+    toast.classList.remove('ms-fade');
+    toast.classList.add('show');
+    // Auto-dismiss after 5 seconds (fade then hide)
+    clearTimeout(monthToastTimer);
+    monthToastTimer = setTimeout(()=>{
+        toast.classList.add('ms-fade');
+        setTimeout(()=>toast.classList.remove('show','ms-fade'), 600);
+    }, 5000);
+}
+
+function closeMonthToast(){
+    clearTimeout(monthToastTimer);
+    const toast = document.getElementById('monthToast');
+    toast.classList.remove('show','ms-fade');
+}
+
+let learnToastTimer = null;
+function showLearnToast(title, content){
+    // Close month toast if open to make room
+    closeMonthToast();
+    document.getElementById('learnToastTitle').textContent = title;
+    document.getElementById('learnToastContent').textContent = content;
+    const toast = document.getElementById('learnToast');
+    toast.classList.add('show');
+    clearTimeout(learnToastTimer);
+    learnToastTimer = setTimeout(()=>toast.classList.remove('show'), 8000);
+}
+
+function closeLearnToast(){
+    clearTimeout(learnToastTimer);
+    document.getElementById('learnToast').classList.remove('show');
+}
+
+function triggerRandomEvent(){
+    const p = G.properties[Math.floor(Math.random()*G.properties.length)];
+    const events = [
+        {title:'Roof Leak!', msg:`${p.name} has a minor roof leak. Repair cost: `, cost:()=>400+Math.floor(Math.random()*800), condition:-5},
+        {title:'HVAC Maintenance', msg:`The HVAC system at ${p.name} needed servicing. Cost: `, cost:()=>300+Math.floor(Math.random()*700), condition:-3},
+        {title:'Plumbing Issue', msg:`${p.name} had a plumbing issue. Repair cost: `, cost:()=>200+Math.floor(Math.random()*500), condition:-3},
+        {title:'Property Tax Hike', msg:`Property taxes increased for ${p.name}. Additional cost: `, cost:()=>300+Math.floor(Math.random()*500), condition:0},
+        {title:'Great Tenant!', msg:`Your tenant at ${p.name} is taking excellent care of the property. `, cost:()=>0, condition:5},
+        {title:'Neighborhood Improvement', msg:`New development near ${p.name} is boosting property values! `, cost:()=>0, condition:0, valueBoost:0.03},
+        {title:'Minor Vandalism', msg:`${p.name} had minor cosmetic damage. Repair cost: `, cost:()=>150+Math.floor(Math.random()*350), condition:-4},
+        {title:'Electrical Issue', msg:`An outlet at ${p.name} needed repair. Cost: `, cost:()=>150+Math.floor(Math.random()*350), condition:-2},
+    ];
+    const ev = events[Math.floor(Math.random()*events.length)];
+    const cost = ev.cost();
+    if(cost>0){
+        G.cash -= cost;
+        p.totalExpenses += cost;
+    }
+    p.condition = Math.max(0, Math.min(100, p.condition + ev.condition));
+    if(ev.valueBoost) p.currentValue = Math.round(p.currentValue * (1+ev.valueBoost));
+    showEvent(ev.title, ev.msg + (cost>0?fmt(cost):'') + (ev.condition>0?' Condition improved.':'') + (ev.valueBoost?` Value increased by ${(ev.valueBoost*100).toFixed(0)}%!`:''));
+}
+
+function shiftMarket(){
+    const roll = Math.random();
+    if(roll<0.25){
+        G.marketTrend='boom'; G.appreciation=0.6+Math.random()*0.4;
+        G.interestRate = Math.max(3.5, G.interestRate - 0.5 - Math.random()*0.5);
+        showEvent('Market Boom!','Real estate market is booming! Property values rising, interest rates dropping.');
+        if(!G.learnShown.market){ showLearn('Market Cycles','Real estate markets go through cycles of boom and bust. During booms, property values rise quickly and interest rates often drop, making it easier to buy. During busts, values fall and it can be harder to find tenants. Smart investors buy during busts (when prices are low) and hold through booms. Timing the market is difficult — that\'s why "time IN the market" often matters more than "timing the market."'); G.learnShown.market=true; }
+    } else if(roll<0.45){
+        G.marketTrend='bust'; G.appreciation=-0.3+Math.random()*-0.3;
+        G.interestRate = Math.min(9.0, G.interestRate + 0.5 + Math.random()*0.5);
+        showEvent('Market Downturn','Real estate market is cooling. Property values declining, interest rates rising.');
+    } else {
+        G.marketTrend='stable'; G.appreciation=0.2+Math.random()*0.2;
+        G.interestRate = Math.max(4.0, Math.min(8.0, G.interestRate + (Math.random()-0.5)*0.5));
+    }
+    G.interestRate = Math.round(G.interestRate*10)/10;
+}
+
+// ========== HELPERS ==========
+function fmt(n){ return '$'+Math.round(n).toLocaleString(); }
+function calcMortgage(principal,annualRate,years){
+    const r=annualRate/100/12, n=years*12;
+    if(r===0) return Math.round(principal/n);
+    return Math.round(principal*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1));
+}
+function estimateExpenses(p){ return Math.round(p.monthlyRent * (0.08 + (100-p.condition)*0.001)); }
+function calcNetWorth(){
+    let nw = G.cash;
+    G.properties.forEach(p=>{ nw += p.currentValue - p.mortgageBalance; });
+    return nw;
+}
+
+function updateHeader(){
+    const cashEl = document.getElementById('hdrCash');
+    cashEl.textContent = fmt(G.cash);
+    cashEl.classList.toggle('negative', G.cash < 0);
+    const nw = calcNetWorth();
+    document.getElementById('hdrNetWorth').textContent = fmt(nw);
+    document.getElementById('hdrMonth').textContent = G.month;
+    document.getElementById('hdrProps').textContent = G.properties.length;
+    let occPct = '--%';
+    if(G.properties.length>0){
+        const occ = G.properties.filter(p=>p.tenant).length;
+        occPct = Math.round(occ/G.properties.length*100)+'%';
+    }
+    document.getElementById('hdrOcc').textContent = occPct;
+
+    // Update map dashboard
+    const md = document.getElementById('mapDashboard');
+    if(md){
+        document.getElementById('mdMonth').textContent = 'Month ' + G.month;
+        document.getElementById('mdCash').textContent = fmt(G.cash);
+        document.getElementById('mdCash').style.color = G.cash<0?'var(--re-red)':'var(--re-gold)';
+        document.getElementById('mdNetWorth').textContent = fmt(nw);
+        document.getElementById('mdProps').textContent = G.properties.length;
+        document.getElementById('mdOccupancy').textContent = occPct;
+        // Monthly cash flow total
+        let totalCF = 0;
+        G.properties.forEach(p=>{
+            const cf = p.tenant ? p.monthlyRent - p.mortgagePayment - estimateExpenses(p) : -p.mortgagePayment - estimateExpenses(p);
+            totalCF += cf;
+        });
+        const cfEl = document.getElementById('mdCashFlow');
+        if(G.properties.length>0){
+            cfEl.textContent = (totalCF>=0?'+':'')+fmt(totalCF)+'/mo';
+            cfEl.style.color = totalCF>=0?'var(--re-green)':'var(--re-red)';
+        } else { cfEl.textContent = '--'; cfEl.style.color = 'var(--re-gold)'; }
+        // Market trend badge
+        const mkt = document.getElementById('mdMarket');
+        mkt.textContent = G.marketTrend.charAt(0).toUpperCase()+G.marketTrend.slice(1);
+        mkt.className = 'md-market ' + G.marketTrend;
+    }
+}
+
+function showEvent(title,msg){
+    document.getElementById('eventTitle').innerHTML = `<i class="fas fa-bell me-1" style="color:var(--re-gold)"></i> ${title}`;
+    document.getElementById('eventMsg').textContent = msg;
+    document.getElementById('eventToast').classList.add('show');
+}
+function dismissEvent(){ document.getElementById('eventToast').classList.remove('show'); }
+
+function showLearn(title,content){
+    document.getElementById('learnTitle').textContent = title;
+    document.getElementById('learnContent').textContent = content;
+    document.getElementById('learnPopup').classList.add('show');
+}
+function closeLearn(){ document.getElementById('learnPopup').classList.remove('show'); }
+
+function toggleGuide(){
+    document.getElementById('guideOverlay').classList.toggle('show');
+}
+
+function initTooltips(){
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el=>{
+        new bootstrap.Tooltip(el);
+    });
+}
+
+// ========== MARKET TAB ==========
+function refreshMarket(){
+    const container = document.getElementById('marketListings');
+    if(!container) return;
+    const available = G.allProperties.filter(p=>p.available && !p.owned);
+    let html='';
+    if(available.length===0){
+        html='<div class="col-12"><p class="text-muted">No properties currently available. Check back next month!</p></div>';
+    }
+    available.forEach((p,i)=>{
+        const t=TYPES[p.type];
+        const downPay=Math.round(p.price*0.20);
+        const mortgage=p.price-downPay;
+        const monthlyMort=calcMortgage(mortgage,G.interestRate,30);
+        const estExp=Math.round(p.monthlyRent*0.15);
+        const estCF=p.monthlyRent-monthlyMort-estExp;
+        const noi=(p.monthlyRent*12)-(estExp*12);
+        const capRate=((noi/p.price)*100).toFixed(1);
+        const idx=G.allProperties.indexOf(p);
+        html+=`<div class="col-md-6 col-lg-4">
+            <div class="market-card" onclick="document.querySelector('[href=\\'#cityMapTab\\']').click();setTimeout(()=>{G.selectedPropIdx=${idx};showPropertyPanel(${idx});drawCity();},100);">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <div style="font-weight:700;font-size:0.9rem"><i class="fas ${t.icon} me-1" style="color:${t.color}"></i>${p.name}</div>
+                        <div style="font-size:0.75rem;color:#888">${t.label} | ${p.sqft.toLocaleString()} sqft</div>
+                    </div>
+                    <span class="badge" style="background:${t.category==='commercial'?'var(--re-orange)':'var(--re-blue)'};font-size:0.65rem">${t.category}</span>
+                </div>
+                <div class="price-tag">${fmt(p.price)}</div>
+                <div class="rent-est"><i class="fas fa-dollar-sign me-1"></i>${fmt(p.monthlyRent)}/mo rent</div>
+                <div class="d-flex gap-3 mt-2" style="font-size:0.78rem;color:#666">
+                    <div>Down: ${fmt(downPay)}</div>
+                    <div>Cap: ${capRate}%</div>
+                    <div class="${estCF>=0?'text-success':'text-danger'}">CF: ${estCF>=0?'+':''}${fmt(estCF)}/mo</div>
+                </div>
+                <div class="mt-2" style="font-size:0.72rem;color:#999">Condition: ${Math.round(p.condition)}% | Click to view details</div>
+            </div>
+        </div>`;
+    });
+    container.innerHTML=html;
+    // Update market indicators
+    const trendEl=document.getElementById('marketTrend');
+    if(G.marketTrend==='boom'){ trendEl.className='market-indicator up'; trendEl.innerHTML='<i class="fas fa-arrow-up"></i> Bull Market'; }
+    else if(G.marketTrend==='bust'){ trendEl.className='market-indicator down'; trendEl.innerHTML='<i class="fas fa-arrow-down"></i> Bear Market'; }
+    else { trendEl.className='market-indicator neutral'; trendEl.innerHTML='<i class="fas fa-minus"></i> Stable Market'; }
+    document.getElementById('marketRate').textContent=G.interestRate.toFixed(1)+'%';
+    document.getElementById('marketApprec').textContent=(G.appreciation>=0?'+':'')+G.appreciation.toFixed(1)+'%/mo';
+}
+
+// ========== PORTFOLIO TAB ==========
+function renderPortfolio(){
+    const container=document.getElementById('portfolioList');
+    if(G.properties.length===0){
+        container.innerHTML='<p class="text-muted">You don\'t own any properties yet. Visit the City Map or Market to purchase your first property!</p>';
+        return;
+    }
+    let html='';
+    G.properties.forEach((p,i)=>{
+        const t=TYPES[p.type];
+        const equity=p.currentValue-p.mortgageBalance;
+        const cf=p.tenant?p.monthlyRent-p.mortgagePayment-estimateExpenses(p):-p.mortgagePayment-estimateExpenses(p);
+        const idx=G.allProperties.indexOf(p);
+        html+=`<div class="portfolio-card ${t.category==='commercial'?'commercial':''}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="prop-name"><i class="fas ${t.icon} me-1" style="color:${t.color}"></i>${p.name}</div>
+                    <div class="prop-meta">${t.label} | ${p.sqft.toLocaleString()} sqft | Owned ${p.monthsOwned} months</div>
+                </div>
+                <button class="btn btn-sm btn-re-outline" onclick="document.querySelector('[href=\\'#cityMapTab\\']').click();setTimeout(()=>{G.selectedPropIdx=${idx};showPropertyPanel(${idx});drawCity();},100);"><i class="fas fa-eye"></i></button>
+            </div>
+            <div class="prop-numbers">
+                <div class="prop-num"><div class="num-label">Value</div><div class="num-value">${fmt(p.currentValue)}</div></div>
+                <div class="prop-num"><div class="num-label">Equity</div><div class="num-value" style="color:var(--re-green-dark)">${fmt(equity)}</div></div>
+                <div class="prop-num"><div class="num-label">Rent</div><div class="num-value">${fmt(p.monthlyRent)}/mo</div></div>
+                <div class="prop-num"><div class="num-label">Cash Flow</div><div class="num-value" style="color:${cf>=0?'var(--re-green-dark)':'var(--re-red)'}">${cf>=0?'+':''}${fmt(cf)}/mo</div></div>
+                <div class="prop-num"><div class="num-label">Tenant</div><div class="num-value">${p.tenant?p.tenant.quality:'<span style="color:var(--re-red)">Vacant</span>'}</div></div>
+                <div class="prop-num"><div class="num-label">Condition</div><div class="num-value">${Math.round(p.condition)}%</div></div>
+            </div>
+        </div>`;
+    });
+    container.innerHTML=html;
+}
+
+// ========== CHARTS ==========
+let cashFlowChart, expenseChart, netWorthChart;
+function initCharts(){
+    const cfCtx=document.getElementById('cashFlowChart').getContext('2d');
+    cashFlowChart=new Chart(cfCtx,{type:'bar',data:{labels:[],datasets:[
+        {label:'Income',data:[],backgroundColor:'rgba(46,204,113,0.7)',borderRadius:4},
+        {label:'Expenses',data:[],backgroundColor:'rgba(231,76,60,0.7)',borderRadius:4}
+    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11,family:'Inter'}}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+
+    const exCtx=document.getElementById('expenseChart').getContext('2d');
+    expenseChart=new Chart(exCtx,{type:'doughnut',data:{labels:['Mortgage','Operating','Repairs'],datasets:[{data:[0,0,0],backgroundColor:['#3498db','#e67e22','#e74c3c'],borderWidth:0}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'Inter'}}}}}});
+
+    const nwCtx=document.getElementById('netWorthChart').getContext('2d');
+    netWorthChart=new Chart(nwCtx,{type:'line',data:{labels:[],datasets:[{label:'Net Worth',data:[],borderColor:'var(--re-gold)',backgroundColor:'rgba(212,168,67,0.1)',fill:true,tension:0.3,pointRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+}
+
+function updateCharts(){
+    // Cash Flow
+    const months=G.history.income.map((_,i)=>'Mo '+(i+1));
+    cashFlowChart.data.labels=months.slice(-24);
+    cashFlowChart.data.datasets[0].data=G.history.income.slice(-24);
+    cashFlowChart.data.datasets[1].data=G.history.expenses.slice(-24);
+    cashFlowChart.update();
+
+    // Expenses breakdown
+    let mortTotal=0,opTotal=0,repairTotal=0;
+    G.properties.forEach(p=>{
+        mortTotal+=p.mortgagePayment;
+        opTotal+=estimateExpenses(p);
+    });
+    repairTotal=Math.round(opTotal*0.3);
+    expenseChart.data.datasets[0].data=[mortTotal,opTotal,repairTotal];
+    expenseChart.update();
+
+    // Net Worth
+    netWorthChart.data.labels=months;
+    netWorthChart.data.datasets[0].data=G.history.netWorth;
+    netWorthChart.update();
+
+    // Ratios
+    if(G.properties.length>0){
+        let totalNOI=0, totalValue=0, totalCashInvested=0, totalAnnualCF=0, totalMortgage=0;
+        G.properties.forEach(p=>{
+            const exp=estimateExpenses(p)*12;
+            const noi=p.monthlyRent*12-exp;
+            totalNOI+=noi;
+            totalValue+=p.currentValue;
+            totalCashInvested+=Math.round(p.price*0.20);
+            const cf=p.tenant?p.monthlyRent-p.mortgagePayment-estimateExpenses(p):-p.mortgagePayment-estimateExpenses(p);
+            totalAnnualCF+=cf*12;
+            totalMortgage+=p.mortgageBalance;
+        });
+        document.getElementById('ratioCapRate').textContent=(totalValue>0?((totalNOI/totalValue)*100).toFixed(1):'--')+'%';
+        document.getElementById('ratioCOC').textContent=(totalCashInvested>0?((totalAnnualCF/totalCashInvested)*100).toFixed(1):'--')+'%';
+        document.getElementById('ratioLTV').textContent=(totalValue>0?((totalMortgage/totalValue)*100).toFixed(0):'--')+'%';
+        const totalROI=totalCashInvested>0?(((calcNetWorth()-100000)/100000)*100).toFixed(1):'--';
+        document.getElementById('ratioROI').textContent=totalROI+'%';
+    }
+}
+
+// ========== QUIZ ==========
+const QUIZ = [
+    {q:'What does "Cap Rate" stand for?',opts:['Capital Rate','Capitalization Rate','Capacity Rate','Capital Appreciation Rate'],ans:1,explain:'Cap Rate (Capitalization Rate) = Net Operating Income / Property Value. It measures the return on a property independent of how it\'s financed.'},
+    {q:'If a property generates $12,000/year in NOI and is worth $200,000, what is the Cap Rate?',opts:['5%','6%','8%','10%'],ans:1,explain:'Cap Rate = $12,000 / $200,000 = 0.06 = 6%.'},
+    {q:'What does LTV stand for?',opts:['Loan-to-Value','Leverage-to-Volume','Loan-to-Venture','Long-Term Value'],ans:0,explain:'LTV (Loan-to-Value) = Mortgage Balance / Property Value. Higher LTV means more leverage and more risk.'},
+    {q:'An investor puts $40,000 down on a property and earns $4,800/year in cash flow. What is the Cash-on-Cash Return?',opts:['8%','10%','12%','15%'],ans:2,explain:'Cash-on-Cash Return = $4,800 / $40,000 = 12%. This measures the return on your actual cash invested.'},
+    {q:'What is "NOI" in real estate?',opts:['Net Operating Income','Net Overall Investment','New Owner Insurance','No Outstanding Interest'],ans:0,explain:'NOI = Total Income - Operating Expenses (excluding mortgage payments). It shows how profitable the property operations are.'},
+    {q:'Why is a 20% down payment typically required for investment properties?',opts:['It\'s the law','Lenders see investment properties as higher risk','It makes math easier','It\'s optional'],ans:1,explain:'Lenders require larger down payments for investment properties because they\'re considered higher risk than primary residences. The owner is less personally motivated to maintain the property.'},
+    {q:'What happens to property values during a market "bust"?',opts:['They increase rapidly','They stay the same','They decrease','They become undefined'],ans:2,explain:'During a market bust/downturn, property values decline. This can create buying opportunities but also means existing owners lose equity temporarily.'},
+    {q:'What is "vacancy rate"?',opts:['The percentage of time a unit is occupied','The percentage of time a unit is unoccupied','The rate of new construction','The speed of tenant turnover'],ans:1,explain:'Vacancy rate = percentage of time the unit has no tenant. Lower vacancy rates mean more consistent income. Typical rates are 5-10%.'},
+    {q:'Which property type typically has the highest risk but potentially highest return?',opts:['Single-family home','Duplex','Commercial retail','Vacant land'],ans:2,explain:'Commercial properties typically carry more risk (harder to find tenants, longer vacancies) but can generate higher returns through higher rent per square foot and longer lease terms.'},
+    {q:'What is "leverage" in real estate investing?',opts:['Using a lever to move buildings','Using borrowed money to increase potential returns','A type of property tax','The ratio of rent to mortgage'],ans:1,explain:'Leverage means using borrowed money (mortgage) to control a larger asset. If a $200,000 property appreciates 5% ($10,000) and you only put $40,000 down, your return on investment is 25%, not 5%.'},
+    {q:'When should you consider refinancing a mortgage?',opts:['When interest rates rise','When interest rates drop significantly below your current rate','When the property is vacant','When you want to sell'],ans:1,explain:'Refinancing makes sense when interest rates drop enough below your current rate to save money after accounting for closing costs (typically 2% of the loan).'},
+    {q:'What is "equity" in a property?',opts:['The purchase price','The mortgage balance','Property value minus mortgage balance','Monthly rent income'],ans:2,explain:'Equity = Property Value - Mortgage Balance. It represents how much of the property you actually "own." Equity grows as you pay down the mortgage and as the property appreciates.'},
+    {q:'What does "cash flow" mean in rental property investing?',opts:['The speed at which money moves','Income minus all expenses including mortgage','The price of the property','The amount of cash you started with'],ans:1,explain:'Cash flow = Rental income - All expenses (mortgage, taxes, insurance, maintenance, management). Positive cash flow means you\'re making money each month after all bills.'},
+    {q:'Why is property condition important for investment returns?',opts:['It only affects curb appeal','Poor condition increases expenses and can cause vacancies','Condition doesn\'t matter if location is good','Banks don\'t care about condition'],ans:1,explain:'Poor property condition leads to higher repair costs, more frequent maintenance, difficulty keeping good tenants, and potentially lower rent — all reducing returns.'},
+    {q:'What is "appreciation" in real estate?',opts:['Saying thank you to tenants','The decrease in property value over time','The increase in property value over time','A type of tax benefit'],ans:2,explain:'Appreciation is the increase in property value over time. It can be driven by market conditions, local development, and property improvements. Historical average is about 3-5% per year.'},
+    {q:'What is a "comparable sale" or "comp"?',opts:['A property listed at the same price','A recently sold similar property used to estimate value','A competing business nearby','A property owned by the same investor'],ans:1,explain:'Comps are recently sold properties similar in size, type, location, and condition. Real estate professionals use comps to determine fair market value of a property.'},
+    {q:'What are the main risks of real estate investing?',opts:['Only market risk','Vacancy, maintenance costs, market downturns, bad tenants, and interest rate changes','There are no risks if you buy right','Only tenant risk'],ans:1,explain:'Real estate investing involves multiple risks: vacancy (no income), maintenance/repair costs, market downturns (value loss), bad tenants (damage/missed payments), and interest rate increases (higher borrowing costs).'},
+    {q:'A property costs $250,000 with $50,000 down. The mortgage is $1,200/mo, rent is $1,800/mo, and expenses are $300/mo. What is the monthly cash flow?',opts:['$300','$600','$1,800','$1,200'],ans:0,explain:'Cash Flow = Rent - Mortgage - Expenses = $1,800 - $1,200 - $300 = $300/month.'},
+    {q:'What is diversification in a real estate portfolio?',opts:['Owning only one type of property','Owning different types of properties in different locations','Selling all properties at once','Having multiple mortgages'],ans:1,explain:'Diversification means spreading risk by owning different property types (residential, commercial) in different locations. If one market segment struggles, others may perform well.'},
+    {q:'What is the biggest advantage of real estate over stocks?',opts:['It\'s completely risk-free','You can use leverage (mortgage) to control a large asset with less cash','It always goes up','It requires no management'],ans:1,explain:'Real estate\'s biggest advantage is leverage — you can control a $200,000 asset with just $40,000. Stocks typically can\'t be leveraged as easily or safely by individual investors. However, real estate also requires active management, unlike stocks.'}
+];
+
+function buildQuiz(){
+    const container=document.getElementById('quizContainer');
+    let html='';
+    QUIZ.forEach((q,qi)=>{
+        html+=`<div class="quiz-question" id="qq${qi}">
+            <h5>${qi+1}. ${q.q}</h5>
+            <div>`;
+        q.opts.forEach((o,oi)=>{
+            html+=`<label class="quiz-option" id="qo${qi}_${oi}" onclick="answerQuiz(${qi},${oi})">${String.fromCharCode(65+oi)}) ${o}</label>`;
+        });
+        html+=`</div>
+            <div class="quiz-feedback" id="qf${qi}"></div>
+        </div>`;
+    });
+    container.innerHTML=html;
+}
+
+function answerQuiz(qi,oi){
+    const q=QUIZ[qi];
+    const fb=document.getElementById('qf'+qi);
+    // Check if already answered
+    if(fb.classList.contains('show')) return;
+    // Mark selected
+    q.opts.forEach((_,j)=>{
+        const el=document.getElementById('qo'+qi+'_'+j);
+        if(j===oi) el.classList.add('selected');
+    });
+    G.quizAnswered++;
+    if(oi===q.ans){
+        G.quizCorrect++;
+        document.getElementById('qo'+qi+'_'+oi).classList.add('correct');
+        fb.className='quiz-feedback correct show';
+        fb.innerHTML='<i class="fas fa-check-circle me-1"></i> Correct! '+q.explain;
+    } else {
+        document.getElementById('qo'+qi+'_'+oi).classList.add('incorrect');
+        document.getElementById('qo'+qi+'_'+q.ans).classList.add('correct');
+        fb.className='quiz-feedback incorrect show';
+        fb.innerHTML='<i class="fas fa-times-circle me-1"></i> Incorrect. The answer is '+String.fromCharCode(65+q.ans)+'. '+q.explain;
+    }
+    document.getElementById('quizScore').textContent=G.quizCorrect+' / '+QUIZ.length;
+}
+
+function resetQuiz(){
+    G.quizAnswered=0; G.quizCorrect=0;
+    document.getElementById('quizScore').textContent='0 / '+QUIZ.length;
+    QUIZ.forEach((q,qi)=>{
+        q.opts.forEach((_,oi)=>{
+            const el=document.getElementById('qo'+qi+'_'+oi);
+            el.className='quiz-option';
+        });
+        document.getElementById('qf'+qi).className='quiz-feedback';
+        document.getElementById('qf'+qi).innerHTML='';
+    });
+}
+
+// ========== WORKSHEET ==========
+function buildWorksheet(){
+    const ws = `
+<div class="ws-section">
+    <h2 style="text-align:center;margin-bottom:4px">Real Estate Portfolio Manager</h2>
+    <h3 style="text-align:center;font-size:14pt;color:#555;margin-bottom:4px">Student Worksheet</h3>
+    <p style="text-align:center;font-size:10pt;color:#888">Name: _________________________ Date: _____________ Period: _____</p>
+</div>
+
+<div class="ws-section">
+    <h3 style="font-size:13pt;border-bottom:2px solid #333;padding-bottom:4px">Part 1: Vocabulary Matching</h3>
+    <p style="font-size:10pt">Match each term with its correct definition.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:10pt;margin-top:8px">
+        <tr><td style="padding:4px;border:1px solid #ccc;width:5%">1.</td><td style="padding:4px;border:1px solid #ccc;width:30%">Cap Rate</td><td style="padding:4px;border:1px solid #ccc;width:5%">___</td><td style="padding:4px;border:1px solid #ccc">A. Money remaining after all income and expenses</td></tr>
+        <tr><td style="padding:4px;border:1px solid #ccc">2.</td><td style="padding:4px;border:1px solid #ccc">NOI</td><td style="padding:4px;border:1px solid #ccc">___</td><td style="padding:4px;border:1px solid #ccc">B. Property value minus mortgage balance</td></tr>
+        <tr><td style="padding:4px;border:1px solid #ccc">3.</td><td style="padding:4px;border:1px solid #ccc">Cash Flow</td><td style="padding:4px;border:1px solid #ccc">___</td><td style="padding:4px;border:1px solid #ccc">C. NOI divided by property value</td></tr>
+        <tr><td style="padding:4px;border:1px solid #ccc">4.</td><td style="padding:4px;border:1px solid #ccc">Equity</td><td style="padding:4px;border:1px solid #ccc">___</td><td style="padding:4px;border:1px solid #ccc">D. Total income minus operating expenses (no mortgage)</td></tr>
+        <tr><td style="padding:4px;border:1px solid #ccc">5.</td><td style="padding:4px;border:1px solid #ccc">LTV</td><td style="padding:4px;border:1px solid #ccc">___</td><td style="padding:4px;border:1px solid #ccc">E. Mortgage balance divided by property value</td></tr>
+        <tr><td style="padding:4px;border:1px solid #ccc">6.</td><td style="padding:4px;border:1px solid #ccc">Appreciation</td><td style="padding:4px;border:1px solid #ccc">___</td><td style="padding:4px;border:1px solid #ccc">F. Increase in property value over time</td></tr>
+        <tr><td style="padding:4px;border:1px solid #ccc">7.</td><td style="padding:4px;border:1px solid #ccc">Vacancy Rate</td><td style="padding:4px;border:1px solid #ccc">___</td><td style="padding:4px;border:1px solid #ccc">G. Annual cash flow divided by cash invested</td></tr>
+        <tr><td style="padding:4px;border:1px solid #ccc">8.</td><td style="padding:4px;border:1px solid #ccc">Cash-on-Cash Return</td><td style="padding:4px;border:1px solid #ccc">___</td><td style="padding:4px;border:1px solid #ccc">H. Percentage of time a unit is unoccupied</td></tr>
+    </table>
+</div>
+
+<div class="ws-section">
+    <h3 style="font-size:13pt;border-bottom:2px solid #333;padding-bottom:4px">Part 2: Real Estate Math</h3>
+    <p style="font-size:10pt">Show your work for each problem.</p>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>1.</strong> A duplex is listed for $240,000. Monthly rent is $1,800 total (both units). Annual operating expenses are $6,000. Calculate the Cap Rate.</p>
+        <div style="border:1px solid #ddd;padding:40px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Work:</div>
+    </div>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>2.</strong> You put $50,000 down on a $250,000 property. Your annual cash flow is $3,600. What is your Cash-on-Cash Return?</p>
+        <div style="border:1px solid #ddd;padding:40px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Work:</div>
+    </div>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>3.</strong> A property worth $300,000 has a mortgage balance of $225,000. What is the LTV ratio? What is the owner's equity?</p>
+        <div style="border:1px solid #ddd;padding:40px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Work:</div>
+    </div>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>4.</strong> An apartment building has 4 units. Last year, one unit was vacant for 3 months and the other three were occupied all year. What was the vacancy rate?</p>
+        <div style="border:1px solid #ddd;padding:40px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Work:</div>
+    </div>
+</div>
+
+<div class="ws-section">
+    <h3 style="font-size:13pt;border-bottom:2px solid #333;padding-bottom:4px">Part 3: Scenario Analysis</h3>
+    <p style="font-size:10pt">Read each scenario and answer the questions.</p>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>Scenario A:</strong> You own two properties. Property 1 is a house renting for $1,200/mo with a $800/mo mortgage and $200/mo expenses. Property 2 is a retail shop renting for $2,500/mo with a $1,800/mo mortgage and $400/mo expenses. Interest rates just dropped from 7% to 5%.</p>
+        <p style="font-size:10pt"><strong>a)</strong> Which property has better monthly cash flow? Show the calculation for each.</p>
+        <div style="border:1px solid #ddd;padding:30px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Answer:</div>
+        <p style="font-size:10pt;margin-top:8px"><strong>b)</strong> Should you refinance? Which property would benefit more from refinancing, and why?</p>
+        <div style="border:1px solid #ddd;padding:30px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Answer:</div>
+    </div>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>Scenario B:</strong> You're choosing between two properties. Property A: $150,000 house, $1,100/mo rent, 95% condition. Property B: $140,000 house, $1,250/mo rent, 55% condition.</p>
+        <p style="font-size:10pt"><strong>a)</strong> Which property looks like the better deal based on rent alone?</p>
+        <div style="border:1px solid #ddd;padding:20px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Answer:</div>
+        <p style="font-size:10pt;margin-top:8px"><strong>b)</strong> What risks does the 55% condition property present that might make it a worse investment?</p>
+        <div style="border:1px solid #ddd;padding:30px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Answer:</div>
+    </div>
+</div>
+
+<div class="ws-section">
+    <h3 style="font-size:13pt;border-bottom:2px solid #333;padding-bottom:4px">Part 4: Short Answer</h3>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>1.</strong> Explain the difference between residential and commercial real estate investing. What are two advantages and two disadvantages of each?</p>
+        <div style="border:1px solid #ddd;padding:50px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Answer:</div>
+    </div>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>2.</strong> Why is portfolio diversification important in real estate? Give a specific example of how diversification could protect an investor.</p>
+        <div style="border:1px solid #ddd;padding:50px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Answer:</div>
+    </div>
+
+    <div class="ws-question" style="margin:12px 0">
+        <p style="font-size:10pt"><strong>3.</strong> A friend says "I'm going to buy the cheapest property I can find because that's the best way to make money in real estate." Do you agree or disagree? Explain your reasoning using at least two concepts from this lesson.</p>
+        <div style="border:1px solid #ddd;padding:50px 8px 8px;margin-top:4px;font-size:9pt;color:#aaa">Answer:</div>
+    </div>
+</div>
+
+<div class="ws-answer-key">
+    <h3 style="font-size:13pt;border-bottom:2px solid #333;padding-bottom:4px">Answer Key</h3>
+    <p style="font-size:10pt"><strong>Part 1:</strong> 1-C, 2-D, 3-A, 4-B, 5-E, 6-F, 7-H, 8-G</p>
+    <p style="font-size:10pt"><strong>Part 2:</strong></p>
+    <p style="font-size:10pt">1. NOI = ($1,800 x 12) - $6,000 = $21,600 - $6,000 = $15,600. Cap Rate = $15,600 / $240,000 = 6.5%</p>
+    <p style="font-size:10pt">2. Cash-on-Cash = $3,600 / $50,000 = 7.2%</p>
+    <p style="font-size:10pt">3. LTV = $225,000 / $300,000 = 75%. Equity = $300,000 - $225,000 = $75,000</p>
+    <p style="font-size:10pt">4. Total possible unit-months = 4 x 12 = 48. Vacant unit-months = 3. Vacancy rate = 3/48 = 6.25%</p>
+    <p style="font-size:10pt"><strong>Part 3A-a:</strong> Property 1 CF = $1,200 - $800 - $200 = $200/mo. Property 2 CF = $2,500 - $1,800 - $400 = $300/mo. Property 2 has better cash flow.</p>
+    <p style="font-size:10pt"><strong>Part 3A-b:</strong> Both should be refinanced if the savings exceed closing costs. Property 2 has a larger mortgage, so the absolute savings would be larger.</p>
+    <p style="font-size:10pt"><strong>Part 3B-a:</strong> Property B has higher rent ($1,250 vs $1,100).</p>
+    <p style="font-size:10pt"><strong>Part 3B-b:</strong> The 55% condition means imminent costly repairs, potential tenant dissatisfaction/vacancy, higher insurance, and reduced property value. These could easily wipe out the rent advantage.</p>
+</div>`;
+    document.getElementById('worksheet-content').innerHTML=ws;
+    document.getElementById('worksheetPreview').innerHTML=ws;
+}
+
+// ========== AUSTIN LEAFLET MAP ==========
+let austinMap = null;
+let austinMarkers = [];
+
+function initAustinMap(){
+    austinMap = L.map('austinLeaflet',{zoomControl:true}).setView([30.2850, -97.7350], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution:'&copy; OpenStreetMap contributors',
+        maxZoom:18
+    }).addTo(austinMap);
+    updateAustinMarkers();
+}
+
+function updateAustinMarkers(){
+    if(!austinMap) return;
+    austinMarkers.forEach(m=>austinMap.removeLayer(m));
+    austinMarkers = [];
+    G.allProperties.forEach((p,idx)=>{
+        if(!p.lat || !p.lng) return;
+        const t = TYPES[p.type];
+        const isSelected = idx === G.selectedPropIdx;
+        let markerHtml, markerSize, markerAnchor;
+
+        if(p.owned){
+            // Rich marker for owned properties
+            const cf = p.tenant ? p.monthlyRent - p.mortgagePayment - estimateExpenses(p) : -p.mortgagePayment - estimateExpenses(p);
+            const cfClass = cf>=0 ? 'cf-pos' : 'cf-neg';
+            const condPct = Math.round(p.condition);
+            const condColor = condPct>70?'#2ecc71':condPct>40?'#f39c12':'#e74c3c';
+            const tenantIcon = p.tenant ? '👤' : '⚠️';
+            const selClass = isSelected ? ' selected' : '';
+            markerHtml = `<div class="austin-owned-marker${selClass}" style="border-color:${t.color}">
+                <div class="aom-header" style="background:${t.color}">${t.label.split(' ')[0]}</div>
+                <div class="aom-body">
+                    <div class="aom-cf ${cfClass}">${cf>=0?'+':''}${fmt(cf)}</div>
+                    <div class="aom-row">${tenantIcon} ${p.tenant?p.tenant.name.split(' ')[0]:'Vacant'}</div>
+                    <div class="aom-cond"><div class="aom-cond-fill" style="width:${condPct}%;background:${condColor}"></div></div>
+                </div>
+            </div>`;
+            markerSize = [90,72];
+            markerAnchor = [45,36];
+        } else {
+            // Simple dot for unowned
+            const classes = 'austin-marker' + (isSelected?' selected':'');
+            markerHtml = `<div class="${classes}" style="background:${t.color};position:relative;">$</div>`;
+            markerSize = [28,28];
+            markerAnchor = [14,14];
+        }
+
+        const icon = L.divIcon({ className:'', html:markerHtml, iconSize:markerSize, iconAnchor:markerAnchor });
+        const marker = L.marker([p.lat,p.lng],{icon,zIndexOffset:p.owned?1000:0}).addTo(austinMap);
+        const status = p.owned ? (p.tenant?'Rented':'VACANT') : (p.available?'For Sale':'Not For Sale');
+        marker.bindTooltip(`<strong>${p.name}</strong><br>${t.label} — ${p.neighborhood}<br>${fmt(p.currentValue)} · ${status}`,{direction:'top',offset:[0,-14]});
+        marker.on('click',()=>{
+            G.selectedPropIdx = idx;
+            showPropertyPanel(idx);
+            updateAustinMarkers();
+            austinMap.panTo([p.lat, p.lng], {animate:true});
+        });
+        austinMarkers.push(marker);
+    });
+}
+
+// ========== START GAME ==========
+function startGame(){
+    document.getElementById('tutorialOverlay').style.display='none';
+    G.started=true;
+    G.history.netWorth.push(100000);
+    drawCity();
+}
+
+// ========== INIT ==========
+function init(){
+    initCity();
+    initCanvas();
+    drawCity();
+    initCharts();
+    buildQuiz();
+    buildWorksheet();
+    initTooltips();
+    // Animate city for vacancy flashing
+    setInterval(()=>{ if(G.started) drawCity(); }, 600);
+    // Resize canvas and refresh maps when switching tabs; keep panel open on map tabs
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab=>{
+        tab.addEventListener('shown.bs.tab', (e)=>{
+            const targetId = e.target.getAttribute('href');
+            // Keep panel open on map tabs, close on other tabs
+            if(targetId !== '#cityMapTab' && targetId !== '#austinMapTab') closePanel();
+            // Hide bottom bar on Austin Map (it has its own dashboard controls)
+            const bottomBar = document.querySelector('.bottom-bar');
+            if(bottomBar) bottomBar.style.display = targetId === '#austinMapTab' ? 'none' : 'flex';
+            setTimeout(()=>{
+                if(document.getElementById('cityMapTab').classList.contains('active')){
+                    const container = canvas.parentElement;
+                    canvas.width = container.clientWidth;
+                    canvas.height = container.clientHeight;
+                    drawCity();
+                }
+                // Init or refresh Austin map when tab shown
+                if(document.getElementById('austinMapTab').classList.contains('active')){
+                    if(!austinMap){ initAustinMap(); }
+                    else { austinMap.invalidateSize(); updateAustinMarkers(); }
+                }
+                // Resize charts when financials tab shown
+                if(cashFlowChart) cashFlowChart.resize();
+                if(expenseChart) expenseChart.resize();
+                if(netWorthChart) netWorthChart.resize();
+            },50);
+        });
+    });
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
