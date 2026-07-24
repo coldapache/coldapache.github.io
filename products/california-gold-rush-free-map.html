@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>California Gold Rush Interactive Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --discovery: #c62828;
+    --camp: #f9a825;
+    --route: #1565c0;
+    --boomtown: #6a1b9a;
+    --bg: #f7f1e3;
+    --ink: #2a1f12;
+    --paper: #fffaf0;
+    --accent: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Georgia', 'Times New Roman', serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  .header { background: linear-gradient(135deg, #4a3520 0%, #7a5a30 100%); color: #fff; padding: 18px 24px; border-bottom: 4px solid #b8860b; }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .header h1 { font-size: 1.7rem; margin: 0; font-weight: 700; letter-spacing: 0.5px; }
+  .header .subtitle { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; font-style: italic; }
+  .layout { max-width: 1200px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  #map { height: 620px; border: 2px solid #7a5a30; border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+  .sidebar { background: var(--paper); border: 2px solid #7a5a30; border-radius: 6px; padding: 18px; max-height: 620px; overflow-y: auto; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+  .sidebar h2 { font-size: 1.1rem; margin: 0 0 10px 0; color: #7a5a30; border-bottom: 2px solid #b8860b; padding-bottom: 6px; }
+  .legend { background: #f3e9d2; padding: 12px; margin-bottom: 16px; border: 1px dashed #7a5a30; border-radius: 4px; font-size: 0.88rem; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #7a5a30; flex-shrink: 0; }
+  .marker-list { list-style: none; padding: 0; margin: 0; }
+  .marker-list li { padding: 8px 10px; margin: 4px 0; border-left: 4px solid #ddd; background: #f3e9d2; cursor: pointer; transition: all 0.15s; font-size: 0.9rem; border-radius: 0 4px 4px 0; }
+  .marker-list li:hover { background: #ffe082; transform: translateX(2px); }
+  .marker-list li .ml-title { font-weight: 700; color: #2a1f12; display: block; }
+  .marker-list li .ml-meta { font-size: 0.78rem; color: #6b5a3e; font-style: italic; }
+  .popup-content { font-family: 'Georgia', serif; max-width: 290px; }
+  .popup-content h3 { margin: 0 0 6px 0; color: #2a1f12; font-size: 1.05rem; border-bottom: 2px solid #b8860b; padding-bottom: 4px; }
+  .popup-content .pc-meta { font-size: 0.8rem; color: #6b5a3e; font-style: italic; margin-bottom: 8px; }
+  .popup-content .pc-stats { background: #fff8e1; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; margin: 8px 0; border-left: 3px solid #b8860b; }
+  .popup-content p { margin: 6px 0; font-size: 0.9rem; line-height: 1.45; }
+  .popup-content .pc-quote { border-left: 3px solid #b8860b; padding-left: 10px; margin: 8px 0; color: #6b5a3e; font-style: italic; font-size: 0.88rem; }
+  .footer-note { max-width: 1200px; margin: 16px auto; padding: 12px 24px; font-size: 0.85rem; color: #6c6c6c; text-align: center; font-style: italic; border-top: 1px solid #ddd; opacity: 0.8; }
+  .footer-note a { color: inherit; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>The California Gold Rush</h1>
+      <div class="subtitle">From Sutter's Mill to the 49ers and the End of the Boom, 1848-1855</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div id="map" role="region" aria-label="Interactive map of California Gold Rush sites and routes"></div>
+  <aside class="sidebar">
+    <h2>Map Key</h2>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#c62828"></span> Discovery / origin</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#f9a825"></span> Mining camp / strike</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#1565c0"></span> 49er route waypoint</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#6a1b9a"></span> Boomtown / port</div>
+    </div>
+    <h2>Sites &amp; Events</h2>
+    <ul class="marker-list" id="markerList"></ul>
+  </aside>
+</div>
+
+<div class="footer-note">Created by <a href="https://www.teacherspayteachers.com/Store/Micahs-Learning-Resources" target="_blank" rel="noopener">Micah's Learning Resources</a>. Visit the store for more interactive HTML resources.</div>
+
+<script>
+  const sites = [
+    { name: "Sutter's Mill (Coloma, CA) - discovery", lat: 38.8030, lng: -120.8915, type: "Discovery", typeColor: "#c62828", stats: "Jan 24, 1848 &middot; James W. Marshall finds gold", body: "Carpenter James W. Marshall was inspecting a new sawmill on the American River for John Sutter when he spotted shiny flakes in the tailrace. Marshall and Sutter tried to keep it secret. They failed.", quote: '"Boys, by God I believe I have found a gold mine." &mdash; James W. Marshall, January 24, 1848' },
+    { name: "San Francisco - boomtown port", lat: 37.7749, lng: -122.4194, type: "Boomtown / port", typeColor: "#6a1b9a", stats: "1848 pop. ~1,000 &middot; 1852 pop. ~36,000", body: "Population exploded 35x in four years. The harbor filled with hundreds of ships abandoned by crews who ran for the goldfields. Many of those ships were buried under landfill and now lie under the Financial District." },
+    { name: "Sacramento - supply hub", lat: 38.5816, lng: -121.4944, type: "Boomtown / port", typeColor: "#6a1b9a", stats: "Founded 1849 on Sutter's land", body: "The nearest river port to the goldfields. Became the supply center for miners and the western terminus of the Pony Express in 1860 and the transcontinental railroad in 1869. State capital since 1854." },
+    { name: "Hangtown / Placerville - rich strike", lat: 38.7296, lng: -120.7985, type: "Mining camp", typeColor: "#f9a825", stats: "Founded 1848 &middot; named for vigilante hangings", body: "One of the richest of the early surface-gold camps in the Mother Lode. So lawless that it took its first nickname from the public hangings of three accused robbers in January 1849. Later renamed for respectability." },
+    { name: "Columbia - 'Gem of the Southern Mines'", lat: 38.0357, lng: -120.4015, type: "Mining camp", typeColor: "#f9a825", stats: "1850-1860 &middot; ~$87M in gold extracted", body: "One of the largest gold-rush camps. Peaked at ~6,000 residents. Today preserved as Columbia State Historic Park with original 1850s buildings, the most complete gold-rush town in California." },
+    { name: "Nevada City - hydraulic mining", lat: 39.2616, lng: -121.0161, type: "Mining camp", typeColor: "#f9a825", stats: "1850s-1880s &middot; quartz & hydraulic mining hub", body: "After surface placer gold ran out, miners blasted entire hillsides apart with high-pressure water cannons (hydraulic mining), devastating the landscape and rivers downstream. Banned by the Sawyer Decision in 1884." },
+    { name: "Grass Valley - hard-rock mining", lat: 39.2191, lng: -121.0611, type: "Mining camp", typeColor: "#f9a825", stats: "Empire Mine operated 1850-1956", body: "Center of California's deepest hard-rock gold mining. The Empire Mine alone produced 5.8 million ounces of gold from shafts a mile underground. Cornish 'Cousin Jack' miners brought their hard-rock expertise from Britain." },
+    { name: "Independence, MO - overland start", lat: 39.0911, lng: -94.4155, type: "49er route", typeColor: "#1565c0", stats: "Spring 1849 &middot; Oregon/California Trail jumping-off point", body: "Most overland 49ers gathered here in spring 1849 and headed west in massive wagon trains. The 2,000-mile journey took 4-6 months across plains, mountains, and deserts &mdash; thousands died of cholera, accidents, or thirst." },
+    { name: "Panama (Chagres River crossing)", lat: 9.3210, lng: -79.9006, type: "49er route", typeColor: "#1565c0", stats: "Sea route alternative, ~6-8 weeks total", body: "The fastest route from the East Coast: sail to Panama, cross the isthmus by mule and canoe through tropical fever country, then catch a Pacific steamer to San Francisco. Many died of yellow fever and malaria on the crossing." },
+    { name: "Cape Horn (Tierra del Fuego)", lat: -55.9833, lng: -67.2667, type: "49er route", typeColor: "#1565c0", stats: "All-sea route &middot; 5-8 months &middot; 17,000+ miles", body: "The safest but slowest route from the East Coast: sail all the way around South America. About 800 ships made the journey in 1849 alone. Storms and contrary winds at the Horn could trap ships for weeks." },
+    { name: "Bodie - last great boomtown", lat: 38.2125, lng: -119.0125, type: "Mining camp", typeColor: "#f9a825", stats: "Peak ~1879 &middot; pop. ~10,000", body: "Discovered late (1859) but boomed after a major strike in 1876. Famous for lawlessness &mdash; the saying went 'goodbye God, I'm going to Bodie.' Today preserved in 'arrested decay' as one of America's best ghost towns." },
+    { name: "Marysville - river-supply center", lat: 39.1457, lng: -121.5914, type: "Boomtown / port", typeColor: "#6a1b9a", stats: "Founded 1850 &middot; head of Feather River navigation", body: "Riverboats from San Francisco unloaded supplies here for the northern mines. Became one of California's largest cities by 1857 before hydraulic-mining debris choked the rivers and ended its shipping role." }
+  ];
+
+  const map = L.map('map', {
+    center: [25, -110],
+    zoom: 3,
+    scrollWheelZoom: true,
+    worldCopyJump: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  const markers = [];
+  sites.forEach((s, i) => {
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background:${s.typeColor};width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #7a5a30, 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10]
+    });
+    const m = L.marker([s.lat, s.lng], { icon }).addTo(map);
+    m.bindPopup(`
+      <div class="popup-content">
+        <h3>${s.name}</h3>
+        <div class="pc-meta">${s.type}</div>
+        <div class="pc-stats">${s.stats}</div>
+        <p>${s.body}</p>
+        ${s.quote ? `<div class="pc-quote">${s.quote}</div>` : ''}
+      </div>`, { maxWidth: 330 });
+    markers.push(m);
+  });
+
+  const list = document.getElementById('markerList');
+  sites.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.style.borderLeftColor = s.typeColor;
+    li.innerHTML = `<span class="ml-title">${s.name}</span><span class="ml-meta">${s.type}</span>`;
+    li.addEventListener('click', () => {
+      map.setView([s.lat, s.lng], 7, { animate: true });
+      markers[i].openPopup();
+    });
+    list.appendChild(li);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Micah's Learning Resources - Interactive History, Economics & STEM Activities</title>
+<meta name="description" content="A showcase of interactive, single-file classroom activities: simulations, investigation labs, interactive biographies, DBQs, and 3D map explorers. No installs, no logins, no prep.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#1a4f8a; --blue-dark:#123a66; --cream:#fbf8f3; --ink:#20242b;
+    --muted:#5a6270; --gold:#c8892a; --line:#e7ddcf; --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:'Source Sans 3',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55}
+  h1,h2,h3,.brand{font-family:'Zilla Slab',Georgia,serif}
+  a{color:var(--blue);text-decoration:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+
+  /* Header */
+  header.site{background:linear-gradient(160deg,var(--blue) 0%,var(--blue-dark) 100%);color:#fff;
+    padding:56px 0 48px;text-align:center}
+  header.site .brand{font-size:1.05rem;letter-spacing:.14em;text-transform:uppercase;opacity:.85;font-weight:600}
+  header.site h1{font-size:2.55rem;line-height:1.15;margin:.35em 0 .25em;font-weight:700}
+  header.site p{max-width:640px;margin:0 auto 1.5em;font-size:1.12rem;opacity:.93}
+  .cta{display:inline-block;background:var(--gold);color:#231a05;font-weight:600;
+    padding:13px 26px;border-radius:8px;font-size:1.05rem;box-shadow:0 6px 18px rgba(0,0,0,.18);
+    transition:transform .12s ease, box-shadow .12s ease}
+  .cta:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.24)}
+  .cta.secondary{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6);box-shadow:none}
+  .cta.secondary:hover{background:rgba(255,255,255,.1)}
+  .hero-badges{margin-top:22px;display:flex;gap:10px 22px;justify-content:center;flex-wrap:wrap;
+    font-size:.95rem;opacity:.9}
+  .hero-badges span::before{content:"\2713 ";color:#ffd98a;font-weight:700}
+
+  /* Sections */
+  section{padding:52px 0}
+  .sec-head{text-align:center;max-width:680px;margin:0 auto 34px}
+  .sec-head h2{font-size:1.9rem;margin:0 0 .3em;color:var(--blue-dark)}
+  .sec-head p{color:var(--muted);font-size:1.08rem;margin:0}
+
+  /* Grid + cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 2px 10px rgba(30,40,60,.05);
+    transition:transform .14s ease, box-shadow .14s ease}
+  .card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(30,40,60,.13)}
+  .card .thumb{aspect-ratio:4/3;background:#eee center/cover no-repeat;border-bottom:1px solid var(--line)}
+  .card .body{padding:18px 18px 20px;display:flex;flex-direction:column;flex:1}
+  .tag{align-self:flex-start;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--blue);background:#eaf1fa;padding:4px 10px;border-radius:999px;margin-bottom:10px}
+  .card h3{margin:0 0 .35em;font-size:1.22rem;line-height:1.25}
+  .card p{margin:0 0 16px;color:var(--muted);font-size:.98rem;flex:1}
+  .btn{display:inline-block;text-align:center;background:var(--blue);color:#fff;font-weight:600;
+    padding:11px 16px;border-radius:8px;transition:background .12s ease}
+  .btn:hover{background:var(--blue-dark)}
+  .btn.play{background:var(--gold);color:#231a05}
+  .btn.play:hover{background:#b37a20}
+
+  /* Free demo section tint */
+  .free{background:#f2ede3;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .free .tag{color:var(--gold);background:#f8eede}
+
+  /* Modal */
+  .modal{position:fixed;inset:0;background:rgba(18,22,30,.82);display:none;z-index:50;
+    padding:24px;flex-direction:column}
+  .modal.open{display:flex}
+  .modal-bar{display:flex;justify-content:space-between;align-items:center;color:#fff;margin-bottom:12px;gap:12px}
+  .modal-bar h3{margin:0;font-size:1.15rem}
+  .modal-bar .m-actions{display:flex;gap:10px;align-items:center}
+  .modal-bar a,.modal-bar button{color:#fff;font-size:.95rem;background:rgba(255,255,255,.14);
+    border:none;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:inherit}
+  .modal iframe{flex:1;width:100%;border:0;border-radius:10px;background:#fff}
+
+  footer.site{background:var(--blue-dark);color:#d9e3f0;text-align:center;padding:44px 0 40px}
+  footer.site a{color:#fff;font-weight:600}
+  footer.site .fcta{margin:6px 0 20px}
+  footer.site small{display:block;opacity:.7;margin-top:14px;font-size:.85rem}
+
+  @media(max-width:560px){
+    header.site h1{font-size:2rem}
+    section{padding:40px 0}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <div class="brand">Micah's Learning Resources</div>
+    <h1>Interactive lessons students actually want to click through.</h1>
+    <p>Simulations, investigation labs, interactive biographies, DBQs, and 3D map explorers for social studies, economics, and STEM. Every resource is a single web page - no installs, no logins, no prep.</p>
+    <a class="cta" href="https://www.teacherspayteachers.com/store/micahs-learning-resources">Browse all resources on TPT</a>
+    <div class="hero-badges">
+      <span>Single-file, works on any device</span>
+      <span>Ready to assign in minutes</span>
+      <span>Free maps you can try below</span>
+    </div>
+  </div>
+</header>
+
+<section id="featured">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Featured resources</h2>
+      <p>A sampler of the most popular activities. Click through to the full version on Teachers Pay Teachers.</p>
+    </div>
+    <div class="grid" id="featured-grid"></div>
+  </div>
+</section>
+
+<section class="free" id="try-free">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Try one free, right now</h2>
+      <p>These map explorers are free classroom resources. Play them here in your browser, then grab the printable-ready version on TPT.</p>
+    </div>
+    <div class="grid" id="free-grid"></div>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="wrap">
+    <h2 style="margin:0 0 .2em">See the full collection</h2>
+    <p class="fcta"><a class="cta" href="https://www.teacherspayteachers.com/store/micahs-learning-resources">Visit the store on Teachers Pay Teachers</a></p>
+    <div>Micah's Learning Resources - interactive activities for grades 4-12.</div>
+    <small>This is a showcase page. All resources are sold on Teachers Pay Teachers.</small>
+  </div>
+</footer>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="modal-bar">
+    <h3 id="modal-title"></h3>
+    <div class="m-actions">
+      <a id="modal-open" href="#" target="_blank" rel="noopener">Open in new tab</a>
+      <button id="modal-close" aria-label="Close">Close &times;</button>
+    </div>
+  </div>
+  <iframe id="modal-frame" title="Interactive resource" src="about:blank" loading="lazy"></iframe>
+</div>
+
+<script>
+const FEATURED = [
+  {slug:"industrial-revolution-factory-tycoon", tag:"Simulation / Tycoon Game", title:"Industrial Revolution Factory Tycoon",
+   blurb:"Run a 19th-century factory - hire workers, buy machines, and weigh profit against reform in a decision-driven tycoon game.",
+   url:"https://www.teacherspayteachers.com/Product/Industrial-Revolution-Game-Factory-Tycoon-Simulation-6th-8th-Grade-History-15316159"},
+  {slug:"credit-debt-mastery-simulator", tag:"Financial Literacy Sim", title:"Credit & Debt Simulator",
+   blurb:"Take out loans, watch a credit score move in real time, and race to pay off debt in this hands-on money game.",
+   url:"https://www.teacherspayteachers.com/Product/Credit-and-Debt-Simulator-Credit-Score-Loans-and-Payoff-Game-16638167"},
+  {slug:"1929-crash-investigation-lab", tag:"Investigation Lab", title:"1929 Crash Investigation Lab",
+   blurb:"Students play investigator, sifting primary sources to explain what really triggered the Great Crash of 1929.",
+   url:"https://www.teacherspayteachers.com/Product/1929-Crash-Investigation-Lab-16151751"},
+  {slug:"dust-bowl-digital-dbq", tag:"Digital DBQ", title:"Dust Bowl Digital DBQ",
+   blurb:"Analyze photographs, letters, and data, then build an evidence-based essay in this interactive Document-Based Question.",
+   url:"https://www.teacherspayteachers.com/Product/Dust-Bowl-Digital-DBQ-Primary-Sources-Document-Analysis-Essay-16226529"},
+  {slug:"leonardo-da-vinci-interactive-biography", tag:"Interactive Biography", title:"Leonardo da Vinci Biography",
+   blurb:"Explore the Renaissance genius through an interactive timeline, a travel map, and a tour of his inventions and art.",
+   url:"https://www.teacherspayteachers.com/Product/Leonardo-da-Vinci-Biography-Renaissance-Inventor-and-Artist-Grades-5-9-16311521"},
+  {slug:"marie-curie-interactive-biography", tag:"Women in STEM", title:"Marie Curie Biography",
+   blurb:"Follow the two-time Nobel laureate's life and discoveries in an interactive Women-in-STEM biography.",
+   url:"https://www.teacherspayteachers.com/Product/Marie-Curie-Interactive-Biography-Women-in-STEM-Physics-Activity-16311474"},
+  {slug:"riverside-coffee-cart-economics-simulation", tag:"Economics Simulation", title:"Riverside Coffee Cart Economics Sim",
+   blurb:"Set prices, juggle supply and demand, and feel opportunity cost by running a small business day by day.",
+   url:"https://www.teacherspayteachers.com/Product/Economics-Simulation-Game-Supply-Demand-Opportunity-Cost-Business-Sim-16569358"},
+  {slug:"world-war-ii-animated-history-timeline", tag:"Animated Timeline", title:"World War II Animated Timeline",
+   blurb:"Scroll through 11 major events of World War II in an animated, illustrated timeline experience.",
+   url:"https://www.teacherspayteachers.com/Product/World-War-II-Animated-History-Timeline-11-Major-Events-Interactive-Scroll-Expe-15665925"},
+  {slug:"marco-polo-life-and-travels-3d-map", tag:"3D Map + Timeline", title:"Marco Polo Interactive 3D Map",
+   blurb:"Trace Marco Polo's journey across a rotating 3D relief map paired with a synchronized timeline.",
+   url:"https://www.teacherspayteachers.com/Product/Marco-Polo-Interactive-3D-Map-Timeline-World-History-Activity-16530624"},
+  {slug:"viking-camp-3d-the-voyage-west", tag:"3D Exploration Game", title:"Viking Camp 3D: The Voyage West",
+   blurb:"Explore a Viking camp and sail a longship west in an immersive, clickable 3D exploration game.",
+   url:"https://www.teacherspayteachers.com/Product/Vikings-3D-Exploration-Game-Viking-Camp-and-Longship-Voyage-Simulation-16914166"}
+];
+
+const FREE = [
+  {slug:"california-gold-rush-free-map", tag:"Free Map Explorer", title:"California Gold Rush Map",
+   blurb:"Map the key sites of the 1849 Gold Rush on an interactive, labeled map.",
+   file:"products/california-gold-rush-free-map.html",
+   url:"https://www.teacherspayteachers.com/store/micahs-learning-resources?search=california%20gold%20rush%20free%20map"},
+  {slug:"ancient-greece-city-states-free-map", tag:"Free Map Explorer", title:"Ancient Greece City-States Map",
+   blurb:"Locate Athens, Sparta, and the major Greek city-states and see how they were spread across the Aegean.",
+   file:"products/ancient-greece-city-states-free-map.html",
+   url:"https://www.teacherspayteachers.com/store/micahs-learning-resources?search=ancient%20greece%20city%20states%20free%20map"},
+  {slug:"albert-einstein-life-locations-free-map", tag:"Free Map Explorer", title:"Einstein Life Locations Map",
+   blurb:"Trace the cities that shaped Albert Einstein's life, from Ulm to Princeton.",
+   file:"products/albert-einstein-life-locations-free-map.html",
+   url:"https://www.teacherspayteachers.com/store/micahs-learning-resources?search=albert%20einstein%20free%20map"},
+  {slug:"beethoven-vienna-residences-free-map", tag:"Free Map Explorer", title:"Beethoven's Vienna Map",
+   blurb:"Walk through the Vienna residences where Beethoven lived and composed.",
+   file:"products/beethoven-vienna-residences-free-map.html",
+   url:"https://www.teacherspayteachers.com/store/micahs-learning-resources?search=beethoven%20vienna%20free%20map"}
+];
+
+function cardHTML(p, isFree){
+  const action = isFree
+    ? `<a class="btn play" href="${p.file}" data-title="${p.title}" data-play="1">Play it free &rarr;</a>`
+    : `<a class="btn" href="${p.url}" target="_blank" rel="noopener">View on TPT &rarr;</a>`;
+  return `<article class="card">
+    <div class="thumb" style="background-image:url('assets/${p.slug}.png')"></div>
+    <div class="body">
+      <span class="tag">${p.tag}</span>
+      <h3>${p.title}</h3>
+      <p>${p.blurb}</p>
+      ${action}
+    </div>
+  </article>`;
+}
+
+document.getElementById('featured-grid').innerHTML = FEATURED.map(p=>cardHTML(p,false)).join('');
+document.getElementById('free-grid').innerHTML = FREE.map(p=>cardHTML(p,true)).join('');
+
+// Live-demo modal
+const modal=document.getElementById('modal'),
+      frame=document.getElementById('modal-frame'),
+      mTitle=document.getElementById('modal-title'),
+      mOpen=document.getElementById('modal-open');
+function openModal(file,title){
+  frame.src=file; mTitle.textContent=title; mOpen.href=file;
+  modal.classList.add('open'); document.body.style.overflow='hidden';
+}
+function closeModal(){
+  modal.classList.remove('open'); frame.src='about:blank'; document.body.style.overflow='';
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-play]');
+  if(t){e.preventDefault(); openModal(t.getAttribute('href'), t.getAttribute('data-title'));}
+});
+document.getElementById('modal-close').addEventListener('click',closeModal);
+modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+</script>
+</body>
+</html>

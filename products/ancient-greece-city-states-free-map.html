@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ancient Greece City-States Interactive Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --athens: #1976d2;
+    --sparta: #c62828;
+    --other: #6d4c41;
+    --sacred: #f9a825;
+    --battle: #4a148c;
+    --bg: #f3e9d2;
+    --ink: #2c1810;
+    --paper: #fdf9ec;
+    --accent: #1976d2;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Georgia', 'Times New Roman', serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  .header { background: linear-gradient(135deg, #1a3a5e 0%, #1976d2 100%); color: #fdf9ec; padding: 18px 24px; border-bottom: 4px solid #f9a825; }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .header h1 { font-size: 1.7rem; margin: 0; font-weight: 700; }
+  .header .subtitle { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; font-style: italic; }
+  .layout { max-width: 1200px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  #map { height: 620px; border: 2px solid #1a3a5e; border-radius: 6px; box-shadow: 0 4px 14px rgba(26, 58, 94, 0.25); }
+  .sidebar { background: var(--paper); border: 2px solid #1a3a5e; border-radius: 6px; padding: 18px; max-height: 620px; overflow-y: auto; box-shadow: 0 4px 14px rgba(26, 58, 94, 0.25); }
+  .sidebar h2 { font-size: 1.1rem; margin: 0 0 10px 0; color: #1a3a5e; border-bottom: 2px solid #f9a825; padding-bottom: 6px; }
+  .legend { background: #fffaee; padding: 12px; margin-bottom: 16px; border: 1px dashed #1a3a5e; border-radius: 4px; font-size: 0.88rem; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #1a3a5e; flex-shrink: 0; }
+  .marker-list { list-style: none; padding: 0; margin: 0; }
+  .marker-list li { padding: 8px 10px; margin: 4px 0; border-left: 4px solid #ddd; background: #fdf9ec; cursor: pointer; transition: all 0.15s; font-size: 0.9rem; border-radius: 0 4px 4px 0; }
+  .marker-list li:hover { background: #faf0d4; transform: translateX(2px); }
+  .marker-list li .ml-title { font-weight: 700; color: #1a3a5e; display: block; }
+  .marker-list li .ml-meta { font-size: 0.78rem; color: #8b6f3d; font-style: italic; }
+  .popup-content { font-family: 'Georgia', serif; max-width: 290px; }
+  .popup-content h3 { margin: 0 0 6px 0; color: #1a3a5e; font-size: 1.05rem; border-bottom: 2px solid #f9a825; padding-bottom: 4px; }
+  .popup-content .pc-meta { font-size: 0.8rem; color: #8b6f3d; font-style: italic; margin-bottom: 8px; }
+  .popup-content .pc-stats { background: #fffaee; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; margin: 8px 0; border-left: 3px solid #f9a825; }
+  .popup-content p { margin: 6px 0; font-size: 0.9rem; line-height: 1.45; }
+  .popup-content .pc-quote { border-left: 3px solid #f9a825; padding-left: 10px; margin: 8px 0; color: #5d4631; font-style: italic; font-size: 0.88rem; }
+  .footer-note { max-width: 1200px; margin: 16px auto; padding: 12px 24px; font-size: 0.85rem; color: #6c6c6c; text-align: center; font-style: italic; border-top: 1px solid #ddd; opacity: 0.8; }
+  .footer-note a { color: inherit; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>Ancient Greece City-States</h1>
+      <div class="subtitle">Polis, Sanctuary, and Battlefield, c. 500-323 BCE</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div id="map" role="region" aria-label="Interactive map of ancient Greek city-states"></div>
+  <aside class="sidebar">
+    <h2>Site Types</h2>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#1976d2"></span> Athens &amp; allies</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#c62828"></span> Sparta &amp; Peloponnesian League</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#6d4c41"></span> Other major polis</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#f9a825"></span> Sacred / Panhellenic site</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#4a148c"></span> Battle site (Persian Wars)</div>
+    </div>
+    <h2>Sites &amp; Battles</h2>
+    <ul class="marker-list" id="markerList"></ul>
+  </aside>
+</div>
+
+<div class="footer-note">Created by <a href="https://www.teacherspayteachers.com/Store/Micahs-Learning-Resources" target="_blank" rel="noopener">Micah's Learning Resources</a>. Visit the store for more interactive HTML resources.</div>
+
+<script>
+  const sites = [
+    { name: "Athens (Attica)", lat: 37.9755, lng: 23.7348, type: "Athens &amp; allies", typeColor: "#1976d2", stats: "Birthplace of democracy &middot; pop. ~250,000 in 431 BCE", body: "The dominant naval and cultural power of the 5th century BCE. Home of the Parthenon (built 447-432 BCE), the Athenian Assembly (Ekklesia) where citizens voted directly, Plato's Academy, and Aristotle's Lyceum. Led the Delian League against Persia, which evolved into the Athenian Empire.", quote: '"We are called a democracy, for the administration is in the hands of the many and not of the few." &mdash; Pericles, Funeral Oration' },
+    { name: "Sparta (Laconia)", lat: 37.0742, lng: 22.4297, type: "Sparta &amp; Peloponnesian League", typeColor: "#c62828", stats: "Militaristic society &middot; ~9,000 Spartiate citizens at peak", body: "The dominant land power. A dual-king oligarchy in which male citizens trained from age 7 in the agoge military system. Society depended on the enslaved helot population of Messenia. Defeated Athens in the Peloponnesian War (431-404 BCE)." },
+    { name: "Thebes (Boeotia)", lat: 38.3251, lng: 23.3186, type: "Other major polis", typeColor: "#6d4c41", stats: "Defeated Sparta at Leuctra (371 BCE)", body: "Major polis in central Greece. The Sacred Band of Thebes (an elite unit of 300 paired warriors) crushed Spartan invincibility at the Battle of Leuctra. Led a brief Theban hegemony under Epaminondas until Macedon's rise." },
+    { name: "Corinth (Isthmus)", lat: 37.9061, lng: 22.8786, type: "Other major polis", typeColor: "#6d4c41", stats: "Wealthy trade hub on the Isthmus", body: "Strategically positioned between the Saronic and Corinthian gulfs. Controlled overland trade between the Peloponnese and central Greece. Founded colonies including Syracuse. Sided with Sparta in the Peloponnesian War." },
+    { name: "Argos (Argolid)", lat: 37.6307, lng: 22.7298, type: "Other major polis", typeColor: "#6d4c41", stats: "Sparta's chief Peloponnesian rival", body: "Ancient polis in the Argolid; historic rival of Sparta. Often allied with Athens against Sparta. Home of important Bronze Age and Archaic sanctuaries to Hera." },
+    { name: "Miletus (Ionia)", lat: 37.5304, lng: 27.2776, type: "Other major polis", typeColor: "#6d4c41", stats: "Ionian intellectual center; birthplace of philosophy", body: "Wealthy Ionian city on the Anatolian coast. Home of pre-Socratic philosophers Thales, Anaximander, and Anaximenes. The Ionian Revolt (499-493 BCE) against Persia, led by Miletus, triggered the Greco-Persian Wars." },
+    { name: "Syracuse (Sicily)", lat: 37.0755, lng: 15.2866, type: "Other major polis", typeColor: "#6d4c41", stats: "Largest Greek colony in the West", body: "Powerful Greek polis founded by Corinth in 734 BCE. Destroyed the Athenian Sicilian Expedition in 413 BCE &mdash; the disaster that doomed Athens in the Peloponnesian War. Home of Archimedes." },
+    { name: "Delphi (Mt. Parnassus)", lat: 38.4824, lng: 22.5010, type: "Sacred / Panhellenic", typeColor: "#f9a825", stats: "Oracle of Apollo &middot; \"omphalos\" navel of the world", body: "The most important religious sanctuary in Greece. The Pythia (priestess) delivered Apollo's oracles to consultants from across the Greek world. Site of the Pythian Games, one of the four Panhellenic festivals." },
+    { name: "Olympia (Elis)", lat: 37.6383, lng: 21.6300, type: "Sacred / Panhellenic", typeColor: "#f9a825", stats: "Birthplace of the Olympic Games (776 BCE)", body: "Sanctuary of Zeus and site of the original Olympic Games, held every four years from 776 BCE. Home of the Temple of Zeus (one of the Seven Wonders, with Phidias's gold-and-ivory cult statue inside)." },
+    { name: "Marathon (Attica)", lat: 38.1539, lng: 23.9633, type: "Battle site", typeColor: "#4a148c", stats: "490 BCE &middot; Athenian victory over Darius I", body: "Athenian hoplites under Miltiades defeated the first Persian invasion. Casualties: 192 Athenians vs ~6,400 Persians. The runner Pheidippides allegedly ran the 26 miles back to Athens with news of victory &mdash; the namesake of the modern marathon." },
+    { name: "Thermopylae (Malis)", lat: 38.8054, lng: 22.5360, type: "Battle site", typeColor: "#4a148c", stats: "480 BCE &middot; \"300\" Spartans &amp; allies vs Xerxes", body: "King Leonidas and his Greek force held the narrow coastal pass against Xerxes's vastly larger Persian army for three days. Betrayed by a local guide, they were outflanked. Leonidas and the Spartan rearguard fought to the last man, buying Athens time to evacuate.", quote: '"Go tell the Spartans, stranger passing by, that here, obedient to their laws, we lie." &mdash; Simonides epitaph' },
+    { name: "Salamis (Saronic Gulf)", lat: 37.9667, lng: 23.5000, type: "Battle site", typeColor: "#4a148c", stats: "480 BCE &middot; decisive Greek naval victory", body: "Themistocles lured the Persian fleet into the narrow Salamis strait, where its numerical advantage became a liability. The Greek triremes destroyed roughly 200 Persian ships and forced Xerxes to retreat to Asia. The turning point of the Persian Wars." }
+  ];
+
+  const map = L.map('map', {
+    center: [38.5, 23.5],
+    zoom: 6,
+    scrollWheelZoom: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  const markers = [];
+  sites.forEach((s, i) => {
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background:${s.typeColor};width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #1a3a5e, 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10]
+    });
+    const m = L.marker([s.lat, s.lng], { icon }).addTo(map);
+    m.bindPopup(`
+      <div class="popup-content">
+        <h3>${s.name}</h3>
+        <div class="pc-meta">${s.type}</div>
+        <div class="pc-stats">${s.stats}</div>
+        <p>${s.body}</p>
+        ${s.quote ? `<div class="pc-quote">${s.quote}</div>` : ''}
+      </div>`, { maxWidth: 330 });
+    markers.push(m);
+  });
+
+  const list = document.getElementById('markerList');
+  sites.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.style.borderLeftColor = s.typeColor;
+    li.innerHTML = `<span class="ml-title">${s.name}</span><span class="ml-meta">${s.type}</span>`;
+    li.addEventListener('click', () => {
+      map.setView([s.lat, s.lng], 8, { animate: true });
+      markers[i].openPopup();
+    });
+    list.appendChild(li);
+  });
+</script>
+
+</body>
+</html>

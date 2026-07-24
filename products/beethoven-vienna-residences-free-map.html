@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beethoven: Vienna Residences & Life Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --beethoven: #4e342e;
+    --premiere: #b71c1c;
+    --residence: #6d4c41;
+    --formative: #2e7d32;
+    --bg: #f5efe7;
+    --ink: #2a201a;
+    --paper: #fffaf0;
+    --accent: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Georgia', 'Times New Roman', serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  .header { background: linear-gradient(135deg, #2a1810 0%, #4e342e 100%); color: #fff; padding: 18px 24px; border-bottom: 4px solid #b8860b; }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .header h1 { font-size: 1.7rem; margin: 0; font-weight: 700; letter-spacing: 0.5px; }
+  .header .subtitle { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; font-style: italic; }
+  .layout { max-width: 1200px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  #map { height: 620px; border: 2px solid #4e342e; border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+  .sidebar { background: var(--paper); border: 2px solid #4e342e; border-radius: 6px; padding: 18px; max-height: 620px; overflow-y: auto; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+  .sidebar h2 { font-size: 1.1rem; margin: 0 0 10px 0; color: #4e342e; border-bottom: 2px solid #b8860b; padding-bottom: 6px; }
+  .legend { background: #efe7d6; padding: 12px; margin-bottom: 16px; border: 1px dashed #4e342e; border-radius: 4px; font-size: 0.88rem; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #4e342e; flex-shrink: 0; }
+  .marker-list { list-style: none; padding: 0; margin: 0; }
+  .marker-list li { padding: 8px 10px; margin: 4px 0; border-left: 4px solid #ddd; background: #efe7d6; cursor: pointer; transition: all 0.15s; font-size: 0.9rem; border-radius: 0 4px 4px 0; }
+  .marker-list li:hover { background: #f5deb3; transform: translateX(2px); }
+  .marker-list li .ml-title { font-weight: 700; color: #2a1810; display: block; }
+  .marker-list li .ml-meta { font-size: 0.78rem; color: #6b5a3e; font-style: italic; }
+  .popup-content { font-family: 'Georgia', serif; max-width: 290px; }
+  .popup-content h3 { margin: 0 0 6px 0; color: #2a1810; font-size: 1.05rem; border-bottom: 2px solid #b8860b; padding-bottom: 4px; }
+  .popup-content .pc-meta { font-size: 0.8rem; color: #6b5a3e; font-style: italic; margin-bottom: 8px; }
+  .popup-content .pc-stats { background: #fff8e1; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; margin: 8px 0; border-left: 3px solid #b8860b; }
+  .popup-content p { margin: 6px 0; font-size: 0.9rem; line-height: 1.45; }
+  .popup-content .pc-quote { border-left: 3px solid #b8860b; padding-left: 10px; margin: 8px 0; color: #6b5a3e; font-style: italic; font-size: 0.88rem; }
+  .footer-note { max-width: 1200px; margin: 16px auto; padding: 12px 24px; font-size: 0.85rem; color: #6c6c6c; text-align: center; font-style: italic; border-top: 1px solid #ddd; opacity: 0.8; }
+  .footer-note a { color: inherit; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>Beethoven in Vienna</h1>
+      <div class="subtitle">9 addresses from Bonn to Heiligenstadt - tracing 35 years of restless moves</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div id="map" role="region" aria-label="Interactive map of Beethoven's residences and premiere sites"></div>
+  <aside class="sidebar">
+    <h2>Map Key</h2>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#2e7d32"></span> Formative years</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#6d4c41"></span> Vienna residence</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#b71c1c"></span> Premiere venue</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#4e342e"></span> Beethoven milestone</div>
+    </div>
+    <h2>Sites &amp; Events</h2>
+    <ul class="marker-list" id="markerList"></ul>
+  </aside>
+</div>
+
+<div class="footer-note">Created by <a href="https://www.teacherspayteachers.com/Store/Micahs-Learning-Resources" target="_blank" rel="noopener">Micah's Learning Resources</a>. Visit the store for the full Classical Composers unit.</div>
+
+<script>
+  const sites = [
+    { name: "Bonngasse 20, Bonn - birthplace", lat: 50.7397, lng: 7.1019, type: "Formative years", typeColor: "#2e7d32", stats: "Dec 1770 &middot; baptized Dec 17", body: "Born in this modest house to court musician Johann van Beethoven, who tried to market Ludwig as a Mozart-style child prodigy (lying about his age in concert programs to make him seem younger). Today the building houses the Beethoven-Haus museum.", quote: '"Music is a higher revelation than all wisdom and philosophy." &mdash; Beethoven' },
+    { name: "Vienna - move from Bonn", lat: 48.2082, lng: 16.3738, type: "Beethoven milestone", typeColor: "#4e342e", stats: "Nov 1792 &middot; arrived age 21", body: "Beethoven arrived in Vienna with letters of introduction from Count Waldstein, intending to study with Haydn. He never returned to Bonn. The relationship with Haydn was prickly; Beethoven secretly took lessons from other teachers behind Haydn's back." },
+    { name: "Pasqualatihaus, Molker Bastei - 1804-1815", lat: 48.2119, lng: 16.3635, type: "Vienna residence", typeColor: "#6d4c41", stats: "Mölker Bastei 8 &middot; 4th floor walkup", body: "Beethoven's longest single Vienna address (intermittently 1804-1815). He moved at least 60-80 times in his life - landlords routinely evicted him for the racket of his playing, the foot-stomping, the buckets of water he poured over his head while composing, and unpaid rent." },
+    { name: "Theater an der Wien - Eroica &amp; Fidelio", lat: 48.2003, lng: 16.3651, type: "Premiere venue", typeColor: "#b71c1c", stats: "1805-1808 &middot; multiple premieres", body: "Premiered the Eroica Symphony (1805), Fidelio (1805), Symphony No. 4 (1807), and the famous mammoth concert of Dec 22, 1808 - Symphonies 5 and 6, Piano Concerto 4, Choral Fantasy, all in one freezing four-hour evening. The theater still stands." },
+    { name: "Heiligenstadt - the Testament", lat: 48.2589, lng: 16.3622, type: "Beethoven milestone", typeColor: "#4e342e", stats: "Oct 6, 1802 &middot; suicide letter", body: "Sent here by his doctor to rest his failing hearing in quiet countryside. Instead he wrote the Heiligenstadt Testament - a despairing letter to his brothers describing thoughts of suicide. He hid it; it was found among his papers after his death. He emerged having chosen to live, and composed the Eroica next." },
+    { name: "Schwarzspanierhaus - final residence", lat: 48.2156, lng: 16.3589, type: "Vienna residence", typeColor: "#6d4c41", stats: "Oct 1825 - Mar 1827", body: "His last apartment. Visitors found him completely deaf, surrounded by 'conversation books' in which guests wrote their questions for him to read. He composed the late string quartets here - music so strange his contemporaries thought he had lost his mind. The 20th century called them his greatest work." },
+    { name: "Karntnertortheater - Ninth Symphony", lat: 48.2031, lng: 16.3700, type: "Premiere venue", typeColor: "#b71c1c", stats: "May 7, 1824 &middot; Choral premiere", body: "The premiere of Symphony No. 9 with the 'Ode to Joy' finale. Beethoven, completely deaf, sat on stage beating time he couldn't hear. The contralto Caroline Unger had to turn him by the arm so he could see the audience's standing ovation - five rounds of applause when imperial protocol allowed only three for the emperor." },
+    { name: "Wahring Cemetery - original burial", lat: 48.2333, lng: 16.3500, type: "Beethoven milestone", typeColor: "#4e342e", stats: "Mar 29, 1827 &middot; 20,000 mourners", body: "Beethoven died March 26, 1827, possibly of liver failure complicated by years of lead exposure from his wine fortifier. Schools closed for the funeral; soldiers held back the crowd. Schubert was a torchbearer. His remains were later moved to the Vienna Central Cemetery in 1888." },
+    { name: "Vienna Central Cemetery - reburial", lat: 48.1505, lng: 16.4395, type: "Beethoven milestone", typeColor: "#4e342e", stats: "Jun 21, 1888 &middot; Group 32A", body: "Reburied in Vienna's enormous Zentralfriedhof in the special 'musicians' grove' alongside Schubert, Brahms, and (with a memorial cenotaph) Mozart. The reburial committee verified the bones, with some sketchy phrenology measurements that produced postcards sold as souvenirs." }
+  ];
+
+  const map = L.map('map', {
+    center: [49, 12],
+    zoom: 6,
+    scrollWheelZoom: true,
+    worldCopyJump: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  const markers = [];
+  sites.forEach((s, i) => {
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background:${s.typeColor};width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #4e342e, 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10]
+    });
+    const m = L.marker([s.lat, s.lng], { icon }).addTo(map);
+    m.bindPopup(`
+      <div class="popup-content">
+        <h3>${s.name}</h3>
+        <div class="pc-meta">${s.type}</div>
+        <div class="pc-stats">${s.stats}</div>
+        <p>${s.body}</p>
+        ${s.quote ? `<div class="pc-quote">${s.quote}</div>` : ''}
+      </div>`, { maxWidth: 330 });
+    markers.push(m);
+  });
+
+  const list = document.getElementById('markerList');
+  sites.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.style.borderLeftColor = s.typeColor;
+    li.innerHTML = `<span class="ml-title">${s.name}</span><span class="ml-meta">${s.type}</span>`;
+    li.addEventListener('click', () => {
+      map.setView([s.lat, s.lng], 13, { animate: true });
+      markers[i].openPopup();
+    });
+    list.appendChild(li);
+  });
+</script>
+
+</body>
+</html>

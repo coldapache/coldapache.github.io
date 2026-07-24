@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albert Einstein: Life Locations Interactive Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --formative: #6d4c41;
+    --discovery: #c62828;
+    --university: #1565c0;
+    --exile: #6a1b9a;
+    --bg: #eef1f5;
+    --ink: #1a2535;
+    --paper: #ffffff;
+    --accent: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Georgia', 'Times New Roman', serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  .header { background: linear-gradient(135deg, #1a2535 0%, #364a66 100%); color: #fff; padding: 18px 24px; border-bottom: 4px solid #b8860b; }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .header h1 { font-size: 1.7rem; margin: 0; font-weight: 700; letter-spacing: 0.5px; }
+  .header .subtitle { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; font-style: italic; }
+  .layout { max-width: 1200px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  #map { height: 620px; border: 2px solid #364a66; border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+  .sidebar { background: var(--paper); border: 2px solid #364a66; border-radius: 6px; padding: 18px; max-height: 620px; overflow-y: auto; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+  .sidebar h2 { font-size: 1.1rem; margin: 0 0 10px 0; color: #364a66; border-bottom: 2px solid #b8860b; padding-bottom: 6px; }
+  .legend { background: #e3e8ee; padding: 12px; margin-bottom: 16px; border: 1px dashed #364a66; border-radius: 4px; font-size: 0.88rem; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #364a66; flex-shrink: 0; }
+  .marker-list { list-style: none; padding: 0; margin: 0; }
+  .marker-list li { padding: 8px 10px; margin: 4px 0; border-left: 4px solid #ddd; background: #e3e8ee; cursor: pointer; transition: all 0.15s; font-size: 0.9rem; border-radius: 0 4px 4px 0; }
+  .marker-list li:hover { background: #cfd8dc; transform: translateX(2px); }
+  .marker-list li .ml-title { font-weight: 700; color: #1a2535; display: block; }
+  .marker-list li .ml-meta { font-size: 0.78rem; color: #546e7a; font-style: italic; }
+  .popup-content { font-family: 'Georgia', serif; max-width: 290px; }
+  .popup-content h3 { margin: 0 0 6px 0; color: #1a2535; font-size: 1.05rem; border-bottom: 2px solid #b8860b; padding-bottom: 4px; }
+  .popup-content .pc-meta { font-size: 0.8rem; color: #546e7a; font-style: italic; margin-bottom: 8px; }
+  .popup-content .pc-stats { background: #fff8e1; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; margin: 8px 0; border-left: 3px solid #b8860b; }
+  .popup-content p { margin: 6px 0; font-size: 0.9rem; line-height: 1.45; }
+  .popup-content .pc-quote { border-left: 3px solid #b8860b; padding-left: 10px; margin: 8px 0; color: #546e7a; font-style: italic; font-size: 0.88rem; }
+  .footer-note { max-width: 1200px; margin: 16px auto; padding: 12px 24px; font-size: 0.85rem; color: #6c6c6c; text-align: center; font-style: italic; border-top: 1px solid #ddd; opacity: 0.8; }
+  .footer-note a { color: inherit; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>Albert Einstein: A Life on the Map</h1>
+      <div class="subtitle">From Ulm to Princeton - the moves that shaped modern physics, 1879-1955</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div id="map" role="region" aria-label="Interactive map of Albert Einstein's life locations"></div>
+  <aside class="sidebar">
+    <h2>Map Key</h2>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#6d4c41"></span> Childhood / formative</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#c62828"></span> Breakthrough discovery</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#1565c0"></span> University / institute</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#6a1b9a"></span> Exile / final years</div>
+    </div>
+    <h2>Sites &amp; Events</h2>
+    <ul class="marker-list" id="markerList"></ul>
+  </aside>
+</div>
+
+<div class="footer-note">Created by <a href="https://www.teacherspayteachers.com/Store/Micahs-Learning-Resources" target="_blank" rel="noopener">Micah's Learning Resources</a>. Visit the store for the full Einstein biography & modern physics unit.</div>
+
+<script>
+  const sites = [
+    { name: "Ulm, Germany - birthplace", lat: 48.4011, lng: 9.9876, type: "Childhood / formative", typeColor: "#6d4c41", stats: "Mar 14, 1879 &middot; Bahnhofstrasse 20", body: "Albert Einstein was born to Jewish parents Hermann (an electrical engineer) and Pauline. The family moved to Munich a year later when his father and uncle co-founded an electrical-equipment company. The Ulm birth house was destroyed in a 1944 Allied bombing raid." },
+    { name: "Munich, Germany - childhood", lat: 48.1351, lng: 11.5820, type: "Childhood / formative", typeColor: "#6d4c41", stats: "1880-1894 &middot; Luitpold Gymnasium", body: "Young Einstein resented the rote discipline of his Munich school. His uncle Jakob and family friend Max Talmud fed him geometry books and Kant. When the family business failed and the Einsteins moved to Italy in 1894, Albert dropped out and followed them - then renounced his German citizenship to avoid military service." },
+    { name: "Zurich, Switzerland - ETH student years", lat: 47.3769, lng: 8.5417, type: "University / institute", typeColor: "#1565c0", stats: "1896-1900 &middot; ETH Polytechnic", body: "After failing the entrance exam on the first try (he passed math and physics but not the general subjects), Einstein finished a Swiss prep year and then studied physics and math at ETH Zurich. He met fellow physics student Mileva Maric, who became his first wife. He graduated in 1900 but could not find an academic post." },
+    { name: "Bern, Switzerland - patent office & miracle year", lat: 46.9480, lng: 7.4474, type: "Breakthrough discovery", typeColor: "#c62828", stats: "1902-1909 &middot; 'Annus mirabilis' 1905", body: "Einstein worked six days a week as a patent clerk reviewing electromechanical inventions. In his spare time in 1905 he published four world-changing papers: the photoelectric effect (which won his 1921 Nobel), Brownian motion, special relativity, and E=mc-squared. He earned his PhD that same year from the University of Zurich.", quote: '"Imagination is more important than knowledge." &mdash; Einstein, 1929' },
+    { name: "Prague, Bohemia - professor", lat: 50.0755, lng: 14.4378, type: "University / institute", typeColor: "#1565c0", stats: "1911-1912 &middot; German University of Prague", body: "Einstein took his first full professorship in Prague. He began wrestling seriously with how to extend relativity to include gravity. His equivalence principle - that acceleration and gravity are locally indistinguishable - took shape during his Prague year before he returned to ETH Zurich in 1912." },
+    { name: "Berlin, Germany - general relativity", lat: 52.5200, lng: 13.4050, type: "Breakthrough discovery", typeColor: "#c62828", stats: "1914-1932 &middot; Prussian Academy", body: "Recruited by Max Planck to the Prussian Academy with no teaching duties, Einstein completed the field equations of general relativity in November 1915. Arthur Eddington's 1919 solar-eclipse expedition confirmed light bending by the Sun and made Einstein an international celebrity overnight." },
+    { name: "Principe Island, Atlantic - eclipse confirms relativity", lat: 1.6447, lng: 7.4109, type: "Breakthrough discovery", typeColor: "#c62828", stats: "May 29, 1919 &middot; Eddington expedition", body: "British astronomer Arthur Eddington traveled to this tiny island off West Africa to photograph stars near the eclipsed Sun. The starlight bent by exactly the amount Einstein's general relativity predicted - twice what Newton's gravity gave. Headlines worldwide announced that Einstein had overturned 200 years of physics." },
+    { name: "Caputh, Germany - summer house", lat: 52.3450, lng: 13.0192, type: "Exile / final years", typeColor: "#6a1b9a", stats: "1929-1932 &middot; refuge from Berlin", body: "Einstein had a wooden summer cottage built in this lakeside village south of Berlin. He sailed his beloved boat 'Tummler' on the Templiner See and entertained guests including Rabindranath Tagore. The Nazi government seized the house in 1933 while he was traveling abroad." },
+    { name: "Princeton, NJ - Institute for Advanced Study", lat: 40.3504, lng: -74.6588, type: "Exile / final years", typeColor: "#6a1b9a", stats: "1933-1955 &middot; 112 Mercer Street", body: "Einstein never returned to Germany. The new Institute for Advanced Study made him one of its first permanent faculty members. He spent his remaining 22 years here pursuing a unified field theory that never came together, advocating for nuclear arms control, and warning against authoritarianism. He died April 18, 1955.", quote: '"Two things are infinite: the universe and human stupidity; and I am not sure about the universe." &mdash; attributed to Einstein' }
+  ];
+
+  const map = L.map('map', {
+    center: [40, 5],
+    zoom: 3,
+    scrollWheelZoom: true,
+    worldCopyJump: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  const markers = [];
+  sites.forEach((s, i) => {
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background:${s.typeColor};width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #364a66, 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10]
+    });
+    const m = L.marker([s.lat, s.lng], { icon }).addTo(map);
+    m.bindPopup(`
+      <div class="popup-content">
+        <h3>${s.name}</h3>
+        <div class="pc-meta">${s.type}</div>
+        <div class="pc-stats">${s.stats}</div>
+        <p>${s.body}</p>
+        ${s.quote ? `<div class="pc-quote">${s.quote}</div>` : ''}
+      </div>`, { maxWidth: 330 });
+    markers.push(m);
+  });
+
+  const list = document.getElementById('markerList');
+  sites.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.style.borderLeftColor = s.typeColor;
+    li.innerHTML = `<span class="ml-title">${s.name}</span><span class="ml-meta">${s.type}</span>`;
+    li.addEventListener('click', () => {
+      map.setView([s.lat, s.lng], 6, { animate: true });
+      markers[i].openPopup();
+    });
+    list.appendChild(li);
+  });
+</script>
+
+</body>
+</html>
