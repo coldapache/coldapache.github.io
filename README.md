@@ -3,5 +3,5 @@
 Play full interactive classroom resources free, then find hundreds more:
 https://www.teacherspayteachers.com/store/micahs-learning-resources
 
-Live site: https://coldapache.github.io/CurriculumAids-showcase/
+Live site: https://coldapache.github.io/
 
