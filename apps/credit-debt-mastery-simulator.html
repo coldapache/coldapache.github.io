@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credit & Debt Mastery: Score, Cards & Loans Simulator</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#1a1a2e;--accent:#0f3460;--highlight:#e94560;--success:#16a34a;--warning:#f59e0b;--info:#3b82f6}
+*{font-family:'Inter',sans-serif}
+body{background:#f8f9fa}
+.navbar{background:var(--primary)!important}
+.nav-tabs .nav-link{color:#555;font-weight:500;font-size:.85rem}
+.nav-tabs .nav-link.active{color:var(--accent);font-weight:700;border-bottom:3px solid var(--accent)}
+.card{border:none;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:1rem}
+.card-header{background:var(--accent);color:#fff;border-radius:12px 12px 0 0!important;font-weight:600}
+.btn-sim{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:.5rem 1.2rem;font-weight:600}
+.btn-sim:hover{background:var(--primary);color:#fff}
+.score-gauge{width:200px;height:200px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative}
+.score-number{font-size:3rem;font-weight:700;z-index:2}
+.decision-card{cursor:pointer;transition:all .2s;border:2px solid #e5e7eb;border-radius:10px;padding:1rem;margin:.5rem 0}
+.decision-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.decision-card.positive{border-left:4px solid var(--success)}
+.decision-card.negative{border-left:4px solid var(--highlight)}
+.decision-card.neutral{border-left:4px solid var(--warning)}
+.amort-table{max-height:400px;overflow-y:auto}
+.quiz-option{cursor:pointer;padding:.6rem 1rem;border:2px solid #e5e7eb;border-radius:8px;margin:.3rem 0;transition:all .2s}
+.quiz-option:hover{border-color:var(--accent);background:#f0f4ff}
+.quiz-option.correct{border-color:var(--success);background:#f0fdf4}
+.quiz-option.incorrect{border-color:var(--highlight);background:#fef2f2}
+.cc-visual{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;border-radius:12px;padding:1.5rem;position:relative;overflow:hidden;max-width:400px}
+.cc-visual::before{content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;background:rgba(255,255,255,.05);border-radius:50%;transform:rotate(-30deg)}
+.cc-chip{width:40px;height:30px;background:linear-gradient(135deg,#d4af37,#f0d060);border-radius:4px}
+.min-pay-bar{height:20px;border-radius:10px;background:#e5e7eb;overflow:hidden;margin:4px 0}
+.min-pay-fill{height:100%;border-radius:10px;transition:width .3s}
+canvas{max-width:100%}
+@media print{.no-print{display:none!important}.print-only{display:block!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ccc}}
+.print-only{display:none}
+#worksheet-content h2{margin-top:1.5rem;border-bottom:2px solid #333;padding-bottom:.3rem}
+#worksheet-content .ws-line{border-bottom:1px solid #999;height:1.8rem;margin:.3rem 0}
+#worksheet-content table{width:100%;border-collapse:collapse;margin:.5rem 0}
+#worksheet-content td,#worksheet-content th{border:1px solid #999;padding:6px 10px;font-size:11pt}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark px-3 no-print">
+<span class="navbar-brand fw-bold"><i class="fas fa-credit-card me-2"></i>Credit & Debt Mastery Simulator</span>
+</nav>
+<div class="container-fluid px-3 py-3 no-print">
+<ul class="nav nav-tabs mb-3" id="mainTabs">
+<li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#score"><i class="fas fa-tachometer-alt me-1"></i>Credit Score Sim</a></li>
+<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cards"><i class="fas fa-credit-card me-1"></i>Credit Cards</a></li>
+<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#loans"><i class="fas fa-hand-holding-usd me-1"></i>Loan Calculator</a></li>
+<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#strategies"><i class="fas fa-chess me-1"></i>Debt Strategies</a></li>
+<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#quiz"><i class="fas fa-question-circle me-1"></i>Quiz</a></li>
+<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#printable"><i class="fas fa-print me-1"></i>Printable</a></li>
+</ul>
+<div class="tab-content">
+
+<!-- CREDIT SCORE SIM -->
+<div class="tab-pane fade show active" id="score">
+<div class="row">
+<div class="col-md-5">
+<div class="card"><div class="card-header"><i class="fas fa-tachometer-alt me-2"></i>Your Credit Score</div>
+<div class="card-body text-center">
+<div class="score-gauge" id="scoreGauge"><span class="score-number" id="scoreNum">650</span></div>
+<p class="mt-2 fw-bold" id="scoreLabel">Fair</p>
+<div class="d-flex justify-content-between px-3 mt-2" style="font-size:.75rem">
+<span class="text-danger">300<br>Poor</span><span class="text-warning">580<br>Fair</span><span class="text-info">670<br>Good</span><span class="text-primary">740<br>V.Good</span><span class="text-success">800<br>Excellent</span>
+</div>
+<div class="mt-3"><h6>Score Factors</h6>
+<div class="mb-1"><small>Payment History (35%)</small><div class="progress" style="height:8px"><div class="progress-bar bg-success" id="fPayHist" style="width:70%"></div></div></div>
+<div class="mb-1"><small>Credit Utilization (30%)</small><div class="progress" style="height:8px"><div class="progress-bar bg-info" id="fUtil" style="width:60%"></div></div></div>
+<div class="mb-1"><small>Length of History (15%)</small><div class="progress" style="height:8px"><div class="progress-bar bg-warning" id="fLength" style="width:40%"></div></div></div>
+<div class="mb-1"><small>New Credit (10%)</small><div class="progress" style="height:8px"><div class="progress-bar bg-primary" id="fNew" style="width:50%"></div></div></div>
+<div class="mb-1"><small>Credit Mix (10%)</small><div class="progress" style="height:8px"><div class="progress-bar bg-secondary" id="fMix" style="width:50%"></div></div></div>
+</div>
+</div></div>
+</div>
+<div class="col-md-7">
+<div class="card"><div class="card-header"><i class="fas fa-list-check me-2"></i>Make Decisions</div>
+<div class="card-body">
+<p class="text-muted">Click a decision to see how it affects your score.</p>
+<div id="decisionList"></div>
+</div></div>
+<div class="card"><div class="card-header bg-dark"><i class="fas fa-history me-2"></i>Decision Log</div>
+<div class="card-body" style="max-height:250px;overflow-y:auto" id="decisionLog"><p class="text-muted">No decisions made yet.</p></div></div>
+</div>
+</div>
+</div>
+
+<!-- CREDIT CARDS -->
+<div class="tab-pane fade" id="cards">
+<div class="row">
+<div class="col-md-6">
+<div class="card"><div class="card-header"><i class="fas fa-credit-card me-2"></i>Your Credit Card</div>
+<div class="card-body">
+<div class="cc-visual mb-3">
+<div class="cc-chip mb-3"></div>
+<div style="font-size:1.2rem;letter-spacing:3px">**** **** **** 4291</div>
+<div class="d-flex justify-content-between mt-2"><span>STUDENT CARD</span><span>VISA</span></div>
+</div>
+<div class="mb-2"><label class="form-label">Credit Limit</label><input type="number" class="form-control" id="ccLimit" value="3000"></div>
+<div class="mb-2"><label class="form-label">APR (%)</label><input type="number" class="form-control" id="ccAPR" value="22.99" step="0.01"></div>
+<div class="mb-2"><label class="form-label">Current Balance ($)</label><input type="number" class="form-control" id="ccBalance" value="0"></div>
+<h6 class="mt-3">Make a Purchase</h6>
+<div class="input-group mb-2"><span class="input-group-text">$</span><input type="number" class="form-control" id="ccPurchase" value="200" placeholder="Amount"><button class="btn btn-sim" onclick="makePurchase()">Charge It</button></div>
+<div class="d-flex gap-2 mt-2">
+<button class="btn btn-success btn-sm" onclick="makePayment('full')"><i class="fas fa-check me-1"></i>Pay Full Balance</button>
+<button class="btn btn-warning btn-sm" onclick="makePayment('min')"><i class="fas fa-minus me-1"></i>Pay Minimum</button>
+<button class="btn btn-outline-primary btn-sm" onclick="advanceMonth()"><i class="fas fa-calendar me-1"></i>Next Month</button>
+</div>
+<div id="ccStatus" class="mt-3"></div>
+</div></div>
+</div>
+<div class="col-md-6">
+<div class="card"><div class="card-header"><i class="fas fa-exclamation-triangle me-2"></i>Minimum Payment Trap</div>
+<div class="card-body">
+<p class="text-muted">See how long it takes to pay off a balance making only minimum payments.</p>
+<div class="mb-2"><label class="form-label">Balance ($)</label><input type="number" class="form-control" id="trapBalance" value="3000"></div>
+<div class="mb-2"><label class="form-label">APR (%)</label><input type="number" class="form-control" id="trapAPR" value="22.99" step="0.01"></div>
+<div class="mb-2"><label class="form-label">Minimum Payment (% of balance, min $25)</label><input type="number" class="form-control" id="trapMinPct" value="2" step="0.5"></div>
+<button class="btn btn-sim w-100" onclick="calcMinTrap()"><i class="fas fa-calculator me-1"></i>Calculate</button>
+<div id="trapResult" class="mt-3"></div>
+<canvas id="trapChart" width="500" height="250" class="mt-2"></canvas>
+</div></div>
+</div>
+</div>
+</div>
+
+<!-- LOAN CALCULATOR -->
+<div class="tab-pane fade" id="loans">
+<div class="row">
+<div class="col-md-5">
+<div class="card"><div class="card-header"><i class="fas fa-calculator me-2"></i>Loan Calculator</div>
+<div class="card-body">
+<div class="mb-2"><label class="form-label">Loan Amount ($)</label><input type="number" class="form-control" id="loanAmt" value="25000"></div>
+<div class="mb-2"><label class="form-label">Interest Rate (%)</label><input type="number" class="form-control" id="loanRate" value="6.5" step="0.1"></div>
+<div class="mb-2"><label class="form-label">Loan Term (years)</label><input type="number" class="form-control" id="loanYears" value="5"></div>
+<div class="mb-2"><label class="form-label">Loan Type</label><select class="form-select" id="loanType"><option>Auto Loan</option><option>Student Loan</option><option>Personal Loan</option><option>Mortgage</option></select></div>
+<button class="btn btn-sim w-100" onclick="calcLoan()"><i class="fas fa-calculator me-1"></i>Calculate Loan</button>
+<div id="loanResult" class="mt-3"></div>
+</div></div>
+</div>
+<div class="col-md-7">
+<div class="card"><div class="card-header"><i class="fas fa-table me-2"></i>Amortization Schedule</div>
+<div class="card-body amort-table" id="amortTable"><p class="text-muted">Calculate a loan to see the schedule.</p></div></div>
+<canvas id="loanChart" width="600" height="250"></canvas>
+</div>
+</div>
+</div>
+
+<!-- DEBT STRATEGIES -->
+<div class="tab-pane fade" id="strategies">
+<h4><i class="fas fa-chess me-2"></i>Debt Payoff Strategies: Snowball vs Avalanche</h4>
+<div class="row">
+<div class="col-md-6">
+<div class="card"><div class="card-header bg-primary"><i class="fas fa-snowflake me-2"></i>Debt Snowball (Smallest Balance First)</div>
+<div class="card-body">
+<p>Pay minimums on all debts, throw extra money at the <strong>smallest balance</strong> first. When it's paid off, roll that payment to the next smallest.</p>
+<p><strong>Pros:</strong> Quick wins build motivation</p>
+<p><strong>Cons:</strong> May pay more total interest</p>
+</div></div>
+</div>
+<div class="col-md-6">
+<div class="card"><div class="card-header bg-danger"><i class="fas fa-mountain me-2"></i>Debt Avalanche (Highest Interest First)</div>
+<div class="card-body">
+<p>Pay minimums on all debts, throw extra money at the <strong>highest interest rate</strong> first. When it's paid off, roll that payment to the next highest.</p>
+<p><strong>Pros:</strong> Saves the most money on interest</p>
+<p><strong>Cons:</strong> Can feel slow at first</p>
+</div></div>
+</div>
+</div>
+<div class="card"><div class="card-header"><i class="fas fa-edit me-2"></i>Enter Your Debts</div>
+<div class="card-body">
+<div id="debtInputs">
+<div class="row mb-2 fw-bold"><div class="col-3">Debt Name</div><div class="col-3">Balance</div><div class="col-3">Interest Rate (%)</div><div class="col-2">Min Payment</div><div class="col-1"></div></div>
+</div>
+<button class="btn btn-outline-primary btn-sm mb-2" onclick="addDebtRow()"><i class="fas fa-plus me-1"></i>Add Debt</button>
+<div class="mb-2"><label class="form-label">Extra Monthly Payment ($)</label><input type="number" class="form-control" id="extraPay" value="200" style="max-width:200px"></div>
+<button class="btn btn-sim" onclick="compareStrategies()"><i class="fas fa-balance-scale me-1"></i>Compare Strategies</button>
+<div id="stratResult" class="mt-3"></div>
+</div></div>
+</div>
+
+<!-- QUIZ -->
+<div class="tab-pane fade" id="quiz">
+<h4><i class="fas fa-trophy me-2"></i>Credit & Debt Quiz</h4>
+<div id="quizContainer"></div>
+<div id="quizResult" class="mt-3" style="display:none"></div>
+</div>
+
+<!-- PRINTABLE -->
+<div class="tab-pane fade" id="printable">
+<h4><i class="fas fa-print me-2"></i>Printable Worksheets</h4>
+<button class="btn btn-sim" onclick="window.print()"><i class="fas fa-print me-1"></i>Print</button>
+</div>
+</div>
+</div>
+
+<!-- PRINTABLE CONTENT -->
+<div id="worksheet-content" class="print-only" style="padding:20px;font-size:11pt">
+<h1 style="text-align:center;font-size:18pt">Credit & Debt Mastery Worksheet</h1>
+<p style="text-align:center">Name: _________________________ Date: _____________ Period: _____</p>
+<h2>Part 1: Credit Score Factors</h2>
+<p>List the 5 factors that determine your credit score and their weight:</p>
+<table><tr><th>#</th><th>Factor</th><th>Weight (%)</th><th>Example of Good Behavior</th></tr>
+<tr><td>1</td><td>_________________________</td><td>____%</td><td>________________________________</td></tr>
+<tr><td>2</td><td>_________________________</td><td>____%</td><td>________________________________</td></tr>
+<tr><td>3</td><td>_________________________</td><td>____%</td><td>________________________________</td></tr>
+<tr><td>4</td><td>_________________________</td><td>____%</td><td>________________________________</td></tr>
+<tr><td>5</td><td>_________________________</td><td>____%</td><td>________________________________</td></tr></table>
+<h2>Part 2: Credit Card Analysis</h2>
+<p>Credit Card Balance: $3,000 | APR: 22.99% | Minimum Payment: 2% (min $25)</p>
+<p>1. What is the monthly interest charge? $3,000 x (22.99% / 12) = $_____________</p>
+<p>2. Minimum payment = $3,000 x 2% = $_____________ </p>
+<p>3. How much of the minimum goes to interest? $_____________</p>
+<p>4. How much actually reduces the balance? $_____________</p>
+<p>5. At minimum payments only, approximately how long to pay off? _______ years</p>
+<p>6. Total amount paid (principal + interest)? $_____________</p>
+<h2>Part 3: Loan Comparison</h2>
+<table><tr><th></th><th>Loan A</th><th>Loan B</th></tr>
+<tr><td>Amount</td><td>$20,000</td><td>$20,000</td></tr>
+<tr><td>Interest Rate</td><td>5%</td><td>8%</td></tr>
+<tr><td>Term</td><td>5 years</td><td>3 years</td></tr>
+<tr><td>Monthly Payment</td><td>$___________</td><td>$___________</td></tr>
+<tr><td>Total Interest Paid</td><td>$___________</td><td>$___________</td></tr>
+<tr><td>Total Amount Paid</td><td>$___________</td><td>$___________</td></tr></table>
+<p>Which loan costs less in total interest? __________________ Why? ________________________________</p>
+<h2>Part 4: Snowball vs Avalanche</h2>
+<p>Given these debts and $200 extra/month:</p>
+<table><tr><th>Debt</th><th>Balance</th><th>Rate</th><th>Min Payment</th></tr>
+<tr><td>Credit Card</td><td>$2,500</td><td>19.99%</td><td>$50</td></tr>
+<tr><td>Car Loan</td><td>$8,000</td><td>6.5%</td><td>$180</td></tr>
+<tr><td>Student Loan</td><td>$15,000</td><td>4.5%</td><td>$150</td></tr></table>
+<p>Snowball order (smallest to largest): 1.____________ 2.____________ 3.____________</p>
+<p>Avalanche order (highest rate first): 1.____________ 2.____________ 3.____________</p>
+<h2>Part 5: Reflection</h2>
+<p>1. Why is it important to build and maintain a good credit score?</p>
+<div class="ws-line"></div><div class="ws-line"></div>
+<p>2. What would you do if you received a $5,000 bonus and had $3,000 in credit card debt?</p>
+<div class="ws-line"></div><div class="ws-line"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ===== CREDIT SCORE SIM ===== */
+let creditScore=650;
+const factors={payHist:70,util:60,length:40,newCredit:50,mix:50};
+
+const decisions=[
+  {text:"Pay all bills on time this month",impact:15,factor:"payHist",type:"positive",explain:"Payment history is 35% of your score. On-time payments are the #1 factor."},
+  {text:"Miss a credit card payment",impact:-45,factor:"payHist",type:"negative",explain:"A missed payment can stay on your report for 7 years and drops your score significantly."},
+  {text:"Pay down credit card balance to under 30%",impact:20,factor:"util",type:"positive",explain:"Keeping utilization below 30% signals responsible credit use."},
+  {text:"Max out your credit card",impact:-35,factor:"util",type:"negative",explain:"High utilization (>90%) signals financial distress to lenders."},
+  {text:"Keep old credit card open (don't close it)",impact:10,factor:"length",type:"positive",explain:"Longer credit history averages improve your score."},
+  {text:"Close your oldest credit card",impact:-15,factor:"length",type:"negative",explain:"Closing old accounts shortens your average credit age."},
+  {text:"Apply for 3 new credit cards at once",impact:-25,factor:"newCredit",type:"negative",explain:"Multiple hard inquiries in a short period suggests desperation for credit."},
+  {text:"Wait 6 months before applying for new credit",impact:10,factor:"newCredit",type:"positive",explain:"Spacing out applications shows patience and planning."},
+  {text:"Get a small installment loan (diversify credit)",impact:15,factor:"mix",type:"positive",explain:"Having different types of credit (cards, loans) improves your mix."},
+  {text:"Pay credit card balance in full every month",impact:20,factor:"payHist",type:"positive",explain:"Consistently paying in full builds an excellent payment history."},
+  {text:"Use only 10% of your credit limit",impact:25,factor:"util",type:"positive",explain:"Single-digit utilization is ideal and maximizes this score factor."},
+  {text:"Co-sign a loan for a friend who defaults",impact:-60,factor:"payHist",type:"negative",explain:"You're equally responsible. Their default appears on YOUR credit report."},
+  {text:"Set up automatic payments for all bills",impact:12,factor:"payHist",type:"positive",explain:"Autopay prevents accidental missed payments."},
+  {text:"Carry a balance and pay 50% each month",impact:5,factor:"util",type:"neutral",explain:"Better than minimum, but paying in full avoids interest entirely."},
+  {text:"Check your credit report for errors",impact:8,factor:"payHist",type:"positive",explain:"Errors are common. Disputing them can quickly improve your score."}
+];
+
+function initDecisions(){
+  const d=document.getElementById('decisionList');
+  d.innerHTML=decisions.map((dec,i)=>`<div class="decision-card ${dec.type}" onclick="makeDecision(${i})" id="dec${i}">
+    <div class="d-flex justify-content-between align-items-center">
+      <span><i class="fas ${dec.type==='positive'?'fa-arrow-up text-success':dec.type==='negative'?'fa-arrow-down text-danger':'fa-minus text-warning'} me-2"></i>${dec.text}</span>
+      <span class="badge ${dec.impact>0?'bg-success':'bg-danger'}">${dec.impact>0?'+':''}${dec.impact}</span>
+    </div></div>`).join('');
+}
+
+function makeDecision(i){
+  const dec=decisions[i];
+  creditScore=Math.max(300,Math.min(850,creditScore+dec.impact));
+  factors[dec.factor]=Math.max(0,Math.min(100,factors[dec.factor]+(dec.impact>0?8:-12)));
+  updateScoreDisplay();
+  const log=document.getElementById('decisionLog');
+  if(log.querySelector('.text-muted'))log.innerHTML='';
+  const entry=document.createElement('div');
+  entry.className=`alert ${dec.impact>0?'alert-success':'alert-danger'} py-2 mb-2`;
+  entry.innerHTML=`<strong>${dec.text}</strong> (${dec.impact>0?'+':''}${dec.impact})<br><small>${dec.explain}</small>`;
+  log.prepend(entry);
+}
+
+function updateScoreDisplay(){
+  document.getElementById('scoreNum').textContent=creditScore;
+  let label='Poor',color='#dc3545';
+  if(creditScore>=800){label='Excellent';color='#16a34a';}
+  else if(creditScore>=740){label='Very Good';color='#3b82f6';}
+  else if(creditScore>=670){label='Good';color='#0ea5e9';}
+  else if(creditScore>=580){label='Fair';color='#f59e0b';}
+  document.getElementById('scoreLabel').textContent=label;
+  document.getElementById('scoreGauge').style.background=`conic-gradient(${color} ${((creditScore-300)/550)*360}deg, #e5e7eb 0deg)`;
+  document.getElementById('fPayHist').style.width=factors.payHist+'%';
+  document.getElementById('fUtil').style.width=factors.util+'%';
+  document.getElementById('fLength').style.width=factors.length+'%';
+  document.getElementById('fNew').style.width=factors.newCredit+'%';
+  document.getElementById('fMix').style.width=factors.mix+'%';
+}
+
+/* ===== CREDIT CARD SIM ===== */
+let ccBalance=0, ccMonth=0, ccTotalInterest=0, ccTotalPaid=0;
+
+function makePurchase(){
+  const amt=parseFloat(document.getElementById('ccPurchase').value)||0;
+  const limit=parseFloat(document.getElementById('ccLimit').value);
+  ccBalance+=amt;
+  if(ccBalance>limit){
+    document.getElementById('ccStatus').innerHTML=`<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-1"></i>Over limit! Balance: $${ccBalance.toFixed(2)} exceeds your $${limit.toLocaleString()} limit.</div>`;
+  }
+  updateCCStatus();
+}
+
+function makePayment(type){
+  if(ccBalance<=0){document.getElementById('ccStatus').innerHTML='<div class="alert alert-info">No balance to pay.</div>';return;}
+  if(type==='full'){ccTotalPaid+=ccBalance;ccBalance=0;}
+  else{
+    const minPay=Math.max(25,ccBalance*0.02);
+    ccBalance-=minPay;ccTotalPaid+=minPay;
+    if(ccBalance<0)ccBalance=0;
+  }
+  updateCCStatus();
+}
+
+function advanceMonth(){
+  if(ccBalance<=0)return;
+  ccMonth++;
+  const apr=parseFloat(document.getElementById('ccAPR').value)/100;
+  const interest=ccBalance*(apr/12);
+  ccBalance+=interest;
+  ccTotalInterest+=interest;
+  updateCCStatus();
+}
+
+function updateCCStatus(){
+  const limit=parseFloat(document.getElementById('ccLimit').value);
+  const util=((ccBalance/limit)*100).toFixed(1);
+  const utilColor=util<=30?'success':util<=50?'warning':'danger';
+  document.getElementById('ccBalance').value=ccBalance.toFixed(2);
+  document.getElementById('ccStatus').innerHTML=`
+    <table class="table table-sm"><tbody>
+    <tr><td>Current Balance</td><td class="text-end fw-bold">$${ccBalance.toFixed(2)}</td></tr>
+    <tr><td>Credit Utilization</td><td class="text-end text-${utilColor} fw-bold">${util}%</td></tr>
+    <tr><td>Minimum Payment (2%, min $25)</td><td class="text-end">$${Math.max(25,ccBalance*0.02).toFixed(2)}</td></tr>
+    <tr><td>Total Interest Accrued</td><td class="text-end text-danger">$${ccTotalInterest.toFixed(2)}</td></tr>
+    <tr><td>Month</td><td class="text-end">${ccMonth}</td></tr>
+    </tbody></table>
+    <div class="min-pay-bar"><div class="min-pay-fill bg-${utilColor}" style="width:${Math.min(util,100)}%"></div></div>`;
+}
+
+/* ===== MINIMUM PAYMENT TRAP ===== */
+function calcMinTrap(){
+  let bal=parseFloat(document.getElementById('trapBalance').value);
+  const apr=parseFloat(document.getElementById('trapAPR').value)/100;
+  const minPct=parseFloat(document.getElementById('trapMinPct').value)/100;
+  const origBal=bal;
+  let months=0, totalPaid=0, totalInterest=0;
+  const balData=[bal],payFullData=[origBal];
+  const fixedPay=origBal/24; // comparison: pay it off in 2 years
+  let balFixed=origBal,totalPaidFixed=0,totalInterestFixed=0;
+
+  while(bal>0.5 && months<600){
+    const interest=bal*(apr/12);
+    const minPay=Math.max(25,bal*minPct);
+    bal=bal+interest-minPay;
+    totalPaid+=minPay;totalInterest+=interest;
+    if(bal<0)bal=0;
+    months++;
+    if(months%6===0)balData.push(Math.round(bal));
+    // fixed comparison
+    if(balFixed>0){
+      const intF=balFixed*(apr/12);
+      balFixed=balFixed+intF-Math.min(fixedPay,balFixed+intF);
+      totalPaidFixed+=Math.min(fixedPay,balFixed+intF+fixedPay);totalInterestFixed+=intF;
+      if(balFixed<0)balFixed=0;
+    }
+  }
+  const years=(months/12).toFixed(1);
+  document.getElementById('trapResult').innerHTML=`
+    <div class="alert alert-danger"><h5>The Minimum Payment Trap</h5>
+    <table class="table table-sm"><tbody>
+    <tr><td>Original Balance</td><td class="text-end">$${origBal.toLocaleString()}</td></tr>
+    <tr><td>Months to Pay Off</td><td class="text-end fw-bold text-danger">${months} months (${years} years!)</td></tr>
+    <tr><td>Total Interest Paid</td><td class="text-end text-danger fw-bold">$${totalInterest.toFixed(2)}</td></tr>
+    <tr><td>Total Amount Paid</td><td class="text-end fw-bold">$${totalPaid.toFixed(2)}</td></tr>
+    <tr><td>Extra Cost vs. Paying Cash</td><td class="text-end text-danger">$${(totalPaid-origBal).toFixed(2)}</td></tr>
+    </tbody></table></div>`;
+
+  // Draw chart
+  const canvas=document.getElementById('trapChart'),ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,500,250);
+  const maxBal=origBal*1.1;
+  ctx.strokeStyle='#e94560';ctx.lineWidth=2;ctx.beginPath();
+  balData.forEach((b,i)=>{
+    const x=40+i*(440/balData.length),y=230-(b/maxBal)*200;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.fillStyle='#333';ctx.font='11px Inter';
+  ctx.fillText('$'+origBal.toLocaleString(),5,40);ctx.fillText('$0',5,235);
+  ctx.fillText('Months',220,248);ctx.fillText('Balance Over Time (Min Payments)',120,20);
+}
+
+/* ===== LOAN CALCULATOR ===== */
+function calcLoan(){
+  const P=parseFloat(document.getElementById('loanAmt').value);
+  const annRate=parseFloat(document.getElementById('loanRate').value)/100;
+  const years=parseInt(document.getElementById('loanYears').value);
+  const n=years*12, r=annRate/12;
+  const payment=r>0?P*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1):P/n;
+  const totalPaid=payment*n;
+  const totalInterest=totalPaid-P;
+
+  document.getElementById('loanResult').innerHTML=`
+    <table class="table table-sm"><tbody>
+    <tr class="table-primary"><td><strong>Monthly Payment</strong></td><td class="text-end fw-bold fs-5">$${payment.toFixed(2)}</td></tr>
+    <tr><td>Total Paid Over Life</td><td class="text-end">$${totalPaid.toFixed(2)}</td></tr>
+    <tr><td>Total Interest</td><td class="text-end text-danger">$${totalInterest.toFixed(2)}</td></tr>
+    <tr><td>Interest-to-Principal Ratio</td><td class="text-end">${((totalInterest/P)*100).toFixed(1)}%</td></tr>
+    </tbody></table>`;
+
+  // Amortization schedule
+  let bal=P, html='<table class="table table-sm table-striped"><thead><tr><th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead><tbody>';
+  const balances=[P];
+  for(let m=1;m<=n;m++){
+    const intPmt=bal*r;
+    const prinPmt=payment-intPmt;
+    bal-=prinPmt;if(bal<0)bal=0;
+    if(m<=24||m>n-6||m%12===0){
+      html+=`<tr><td>${m}</td><td>$${payment.toFixed(2)}</td><td>$${prinPmt.toFixed(2)}</td><td class="text-danger">$${intPmt.toFixed(2)}</td><td>$${bal.toFixed(2)}</td></tr>`;
+    }else if(m===25){html+=`<tr><td colspan="5" class="text-center text-muted">... (showing every 12th month) ...</td></tr>`;}
+    if(m%6===0)balances.push(Math.round(bal));
+  }
+  html+='</tbody></table>';
+  document.getElementById('amortTable').innerHTML=html;
+
+  // Chart
+  const canvas=document.getElementById('loanChart'),ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,600,250);
+  ctx.strokeStyle='#0f3460';ctx.lineWidth=2;ctx.beginPath();
+  balances.forEach((b,i)=>{const x=50+i*(520/balances.length),y=220-(b/P)*190;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  ctx.fillStyle='#0f3460';ctx.fillRect(50,222,520,2);
+  ctx.fillStyle='#333';ctx.font='11px Inter';
+  ctx.fillText('$'+P.toLocaleString(),5,30);ctx.fillText('$0',5,225);
+  ctx.fillText('Loan Balance Over Time',220,15);
+}
+
+/* ===== DEBT STRATEGIES ===== */
+let debtRowCount=0;
+function addDebtRow(name='',bal='',rate='',min=''){
+  debtRowCount++;
+  const div=document.getElementById('debtInputs');
+  const row=document.createElement('div');row.className='row mb-2';row.id='drow'+debtRowCount;
+  row.innerHTML=`<div class="col-3"><input class="form-control form-control-sm" placeholder="Name" value="${name}"></div>
+    <div class="col-3"><input type="number" class="form-control form-control-sm" placeholder="Balance" value="${bal}"></div>
+    <div class="col-3"><input type="number" class="form-control form-control-sm" placeholder="Rate %" value="${rate}" step="0.1"></div>
+    <div class="col-2"><input type="number" class="form-control form-control-sm" placeholder="Min $" value="${min}"></div>
+    <div class="col-1"><button class="btn btn-outline-danger btn-sm" onclick="document.getElementById('drow${debtRowCount}').remove()"><i class="fas fa-times"></i></button></div>`;
+  div.appendChild(row);
+}
+
+function getDebts(){
+  const rows=document.querySelectorAll('#debtInputs .row:not(.fw-bold)');
+  const debts=[];
+  rows.forEach(r=>{
+    const inputs=r.querySelectorAll('input');
+    if(inputs.length<4)return;
+    const name=inputs[0].value,bal=parseFloat(inputs[1].value),rate=parseFloat(inputs[2].value),min=parseFloat(inputs[3].value);
+    if(name&&bal>0)debts.push({name,balance:bal,rate:rate/100,minPay:min});
+  });
+  return debts;
+}
+
+function simulatePayoff(debts,extra,strategy){
+  debts=debts.map(d=>({...d,remaining:d.balance}));
+  if(strategy==='snowball')debts.sort((a,b)=>a.remaining-b.remaining);
+  else debts.sort((a,b)=>b.rate-a.rate);
+  let months=0,totalInterest=0,totalPaid=0;
+  while(debts.some(d=>d.remaining>0.01)&&months<600){
+    months++;
+    let extraLeft=extra;
+    debts.forEach(d=>{
+      if(d.remaining<=0)return;
+      const interest=d.remaining*(d.rate/12);
+      d.remaining+=interest;totalInterest+=interest;
+      const pay=Math.min(d.remaining,d.minPay);
+      d.remaining-=pay;totalPaid+=pay;
+    });
+    // Apply extra to target
+    for(let d of debts){
+      if(d.remaining<=0)continue;
+      const pay=Math.min(d.remaining,extraLeft);
+      d.remaining-=pay;extraLeft-=pay;totalPaid+=pay;
+      if(extraLeft<=0)break;
+    }
+    if(strategy==='snowball')debts.sort((a,b)=>a.remaining-b.remaining);
+    else debts.sort((a,b)=>b.rate-a.rate);
+  }
+  return{months,totalInterest,totalPaid};
+}
+
+function compareStrategies(){
+  const debts=getDebts();
+  if(debts.length===0){alert('Add some debts first!');return;}
+  const extra=parseFloat(document.getElementById('extraPay').value)||0;
+  const snowball=simulatePayoff(debts,extra,'snowball');
+  const avalanche=simulatePayoff(debts,extra,'avalanche');
+  const saved=Math.abs(snowball.totalInterest-avalanche.totalInterest);
+  const winner=avalanche.totalInterest<snowball.totalInterest?'Avalanche':'Snowball';
+
+  document.getElementById('stratResult').innerHTML=`
+    <div class="row"><div class="col-md-6">
+      <div class="alert alert-primary"><h5><i class="fas fa-snowflake me-1"></i>Snowball</h5>
+      <p>Payoff time: <strong>${snowball.months} months</strong> (${(snowball.months/12).toFixed(1)} yrs)</p>
+      <p>Total interest: <strong class="text-danger">$${snowball.totalInterest.toFixed(2)}</strong></p>
+      <p>Total paid: $${snowball.totalPaid.toFixed(2)}</p></div>
+    </div><div class="col-md-6">
+      <div class="alert alert-danger"><h5><i class="fas fa-mountain me-1"></i>Avalanche</h5>
+      <p>Payoff time: <strong>${avalanche.months} months</strong> (${(avalanche.months/12).toFixed(1)} yrs)</p>
+      <p>Total interest: <strong class="text-danger">$${avalanche.totalInterest.toFixed(2)}</strong></p>
+      <p>Total paid: $${avalanche.totalPaid.toFixed(2)}</p></div>
+    </div></div>
+    <div class="alert alert-success text-center"><i class="fas fa-trophy me-1"></i><strong>${winner}</strong> saves you <strong>$${saved.toFixed(2)}</strong> in interest!</div>`;
+}
+
+/* ===== QUIZ ===== */
+const quizData=[
+  {q:"What is the most important factor in your credit score?",opts:["Credit utilization","Payment history","Length of credit history","Types of credit"],ans:1},
+  {q:"What credit utilization ratio is recommended?",opts:["Under 30%","Under 10%","Under 50%","Under 75%"],ans:0},
+  {q:"What happens to your score if you miss a payment?",opts:["Nothing","Drops 5-10 points","Can drop 50-100+ points","Goes to zero"],ans:2},
+  {q:"APR stands for:",opts:["Annual Payment Rate","Annual Percentage Rate","Applied Purchase Rate","Adjusted Prime Rate"],ans:1},
+  {q:"Which debt payoff method saves the most interest?",opts:["Avalanche","Snowball","Minimum payments only","Random order"],ans:0},
+  {q:"A credit score of 750 is considered:",opts:["Poor","Fair","Good","Very Good"],ans:3},
+  {q:"What is compound interest on debt?",opts:["Interest on interest plus principal","Interest on principal only","A one-time fee","Government tax on loans"],ans:0},
+  {q:"The minimum payment trap refers to:",opts:["Paying off debt too fast","Getting the minimum credit limit","Minimum score required for a card","Paying only minimums causes debt to grow due to interest"],ans:3},
+  {q:"How long can a missed payment stay on your credit report?",opts:["1 year","3 years","7 years","Forever"],ans:2},
+  {q:"A secured credit card requires:",opts:["A co-signer","A security deposit","A minimum income","Perfect credit"],ans:1},
+  {q:"What is a hard inquiry?",opts:["Checking your own score","A question on a credit card application","A lender checking your credit when you apply","A type of interest rate"],ans:2},
+  {q:"If you have $5,000 in debt at 20% APR, monthly interest is approximately:",opts:["$83","$42","$100","$167"],ans:0},
+  {q:"Which action would MOST improve a poor credit score?",opts:["Closing all credit cards","Taking out a large loan","Paying all bills on time for 6+ months","Not using credit at all"],ans:2},
+  {q:"The debt snowball method pays off debts in order of:",opts:["Highest interest rate first","Largest balance first","Oldest debt first","Smallest balance first"],ans:3},
+  {q:"A 0% APR introductory offer means:",opts:["No interest forever","No interest for a limited time","No payments needed","Free money"],ans:1},
+  {q:"What is amortization?",opts:["Paying a lump sum","Spreading loan payments over time with decreasing interest","A type of credit card","A credit score model"],ans:1},
+  {q:"Co-signing a loan means:",opts:["You vouch for someone; if they default, YOU owe the debt","You share the account equally","You get half the loan amount","Nothing if you trust the person"],ans:0},
+  {q:"Grace period on a credit card is:",opts:["Time to make a late payment with no penalty","A discount period","The first year of card ownership","Time between statement and due date with no interest on new purchases if paid in full"],ans:3},
+  {q:"What is the FICO score range?",opts:["0-100","100-500","300-850","500-1000"],ans:2},
+  {q:"Which is NOT a type of consumer credit?",opts:["Credit card","Mortgage","Student loan","Checking account"],ans:3}
+];
+let quizAnswered=0,quizCorrect=0;
+
+function initQuiz(){
+  document.getElementById('quizContainer').innerHTML=quizData.map((q,i)=>`
+  <div class="card mb-3"><div class="card-body">
+    <p class="fw-bold"><span class="badge bg-primary me-1">${i+1}</span>${q.q}</p>
+    ${q.opts.map((o,j)=>`<div class="quiz-option" id="qo${i}_${j}" onclick="answerQ(${i},${j})">${String.fromCharCode(65+j)}) ${o}</div>`).join('')}
+    <div id="qf${i}" class="mt-2"></div>
+  </div></div>`).join('')+`<button class="btn btn-sim" onclick="gradeQuiz()"><i class="fas fa-check-circle me-1"></i>Show Score</button>`;
+}
+
+function answerQ(qi,oi){
+  if(document.getElementById('qo'+qi+'_'+oi).classList.contains('correct')||document.getElementById('qo'+qi+'_'+oi).classList.contains('incorrect'))return;
+  const correct=oi===quizData[qi].ans;
+  document.getElementById('qo'+qi+'_'+oi).classList.add(correct?'correct':'incorrect');
+  if(!correct)document.getElementById('qo'+qi+'_'+quizData[qi].ans).classList.add('correct');
+  document.getElementById('qf'+qi).innerHTML=correct?'<span class="text-success"><i class="fas fa-check me-1"></i>Correct!</span>':'<span class="text-danger"><i class="fas fa-times me-1"></i>Incorrect.</span>';
+  const fb=document.getElementById('qf'+qi);if(!fb.dataset.scored){fb.dataset.scored='1';quizAnswered++;if(correct)quizCorrect++;}
+}
+
+function gradeQuiz(){
+  const pct=Math.round((quizCorrect/quizData.length)*100);
+  let grade=pct>=90?'A':pct>=80?'B':pct>=70?'C':pct>=60?'D':'F';
+  const r=document.getElementById('quizResult');r.style.display='';
+  r.innerHTML=`<div class="alert alert-${pct>=70?'success':'warning'} text-center"><h3>${quizCorrect}/${quizData.length} (${pct}%)</h3><p>Grade: ${grade}</p></div>`;
+}
+
+/* ===== INIT ===== */
+initDecisions();updateScoreDisplay();
+addDebtRow('Credit Card','2500','19.99','50');
+addDebtRow('Car Loan','8000','6.5','180');
+addDebtRow('Student Loan','15000','4.5','150');
+initQuiz();
+</script>
+</body>
+</html>

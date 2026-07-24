@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Life &amp; Travels of Marco Polo: Interactive 3D Map &amp; Timeline | World History Activity</title>
+    
+    <!-- ArcGIS API for JavaScript CSS -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/dark/main.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --molten-orange: #7f9b8e;
+            --steel-grey: #3f5a70;
+            --furnace-black: #1c1810;
+            --rust-red: #a3361f;
+            --blueprint-blue: #c9a85c;
+            --panel-bg: rgba(24,20,12,0.86);
+            --correct: #4caf50;
+            --wrong: #f44336;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'EB Garamond', sans-serif;
+            background-color: var(--furnace-black);
+            overflow: hidden;
+            color: #cfd8dc;
+        }
+
+        #viewDiv {
+            height: 100%;
+            width: 100%;
+        }
+
+        .esri-ui .esri-attribution {
+            background: rgba(0, 0, 0, 0.7);
+            color: #888;
+            font-size: 0.7rem;
+        }
+
+        /* --- SIDEBAR TOGGLE BUTTON --- */
+        #sidebar-toggle {
+            position: absolute;
+            top: 20px;
+            right: 0;
+            z-index: 5001;
+            background: var(--blueprint-blue);
+            color: white;
+            border: 2px solid var(--molten-orange);
+            border-right: none;
+            padding: 15px 25px 15px 20px;
+            cursor: pointer;
+            font-family: 'Cinzel', sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            box-shadow: -5px 5px 15px rgba(0,0,0,0.5);
+            border-radius: 5px 0 0 5px;
+            transition: right 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #sidebar-toggle:hover {
+            background: var(--molten-orange);
+            color: black;
+            border-color: white;
+        }
+
+        .toggle-icon {
+            display: inline-block;
+            transition: transform 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        /* --- EDUCATION SIDEBAR --- */
+        #sidebar {
+            position: absolute;
+            top: 0;
+            right: -500px;
+            width: 500px;
+            height: 100%;
+            background: var(--panel-bg);
+            border-left: 5px solid var(--steel-grey);
+            z-index: 5000;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.9);
+        }
+
+        #sidebar.open {
+            right: 0;
+        }
+
+        #sidebar-toggle.open {
+            right: 500px;
+            background: var(--steel-grey);
+            color: white;
+            border-color: var(--steel-grey);
+        }
+        
+        #sidebar-toggle.open .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .sidebar-header {
+            padding: 25px;
+            background: #0d1216;
+            border-bottom: 2px solid var(--molten-orange);
+            text-align: center;
+        }
+
+        .sidebar-header h2 {
+            font-family: 'Cinzel', sans-serif;
+            color: var(--molten-orange);
+            margin: 0;
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255, 87, 34, 0.4);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--steel-grey);
+            background: #151a1e;
+        }
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 15px;
+            color: #78909c;
+            cursor: pointer;
+            font-family: 'Cinzel', sans-serif;
+            font-size: 1.1rem;
+            transition: 0.3s;
+            letter-spacing: 1px;
+        }
+        .tab-btn:hover { color: #fff; background: #263238; }
+        .tab-btn.active {
+            background: var(--molten-orange);
+            color: black;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.5s; }
+
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+        /* Lesson Plan Styles */
+        .lesson-section {
+            margin-bottom: 30px;
+            border-left: 4px solid var(--rust-red);
+            padding-left: 20px;
+            background: rgba(255,255,255,0.03);
+            padding: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+        .lesson-section h3 { color: var(--steel-grey); font-family: 'Cinzel', sans-serif; margin-top: 0; font-size: 1.4rem; letter-spacing: 1px; }
+        .vocab-word { color: var(--molten-orange); font-weight: bold; border-bottom: 1px dotted var(--steel-grey); }
+
+        /* Quiz Styles */
+        .quiz-question {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border: 1px solid #37474f;
+        }
+        .q-text { font-weight: bold; color: white; margin-bottom: 15px; display: block; font-size: 1.1rem; }
+        
+        .options label {
+            display: block;
+            padding: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            margin-bottom: 5px;
+            background: rgba(0,0,0,0.3);
+        }
+        .options label:hover { background: rgba(255, 87, 34, 0.2); border-color: var(--molten-orange); }
+        .options input { margin-right: 10px; }
+        
+        .feedback {
+            margin-top: 10px;
+            padding: 12px;
+            font-size: 0.95rem;
+            display: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .feedback.correct { display: block; background: rgba(76, 175, 80, 0.2); border: 1px solid var(--correct); color: var(--correct); }
+        .feedback.wrong { display: block; background: rgba(244, 67, 54, 0.2); border: 1px solid var(--wrong); color: #ff8a80; }
+
+        /* --- INTRO MODAL --- */
+        #intro-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #263238 0%, #000000 100%); 
+            z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s;
+        }
+        .intro-box {
+            border: 4px solid var(--steel-grey); padding: 40px; max-width: 600px; text-align: center;
+            background: #111; box-shadow: 0 0 60px rgba(255, 87, 34, 0.2);
+        }
+        .intro-box h1 { font-family: 'Cinzel'; font-size: 4rem; color: var(--molten-orange); margin: 0; text-transform: uppercase;}
+        .start-btn {
+            background: var(--steel-grey); border: 2px solid white; padding: 15px 40px; margin-top: 30px;
+            font-family: 'Cinzel'; font-size: 1.5rem; cursor: pointer; color: white; transition: 0.2s;
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+        .start-btn:hover { background: var(--molten-orange); color: black; border-color: black; }
+
+        /* --- TIMELINE HUD --- */
+        #timeline-hud {
+            position: absolute; bottom: 30px; left: 30px; width: 350px;
+            background: #101518; border: 2px solid var(--steel-grey); 
+            z-index: 4000; box-shadow: 0 0 20px black; border-radius: 0;
+            display: flex; flex-direction: column;
+        }
+        .hud-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 2px solid var(--molten-orange); padding: 10px 15px; 
+            background: #1c2429;
+        }
+        .hud-date { font-family: 'Cinzel', sans-serif; color: var(--molten-orange); font-size: 1.8rem; letter-spacing: 1px;}
+        .hud-step { color: #888; font-family: monospace; }
+        
+        .hud-body { padding: 15px; }
+        .hud-body h3 { color: #fff; margin: 0 0 10px 0; font-family: 'Cinzel'; font-size: 1.3rem; letter-spacing: 1px; text-transform: uppercase;}
+        .hud-body p { margin: 0; font-size: 0.95rem; line-height: 1.5; color: #b0bec5; min-height: 60px;}
+        
+        .hud-controls { display: flex; gap: 10px; margin-top: 15px; }
+        .nav-btn { 
+            flex: 1; padding: 10px; background: #263238; color: white; 
+            border: 1px solid #455a64; cursor: pointer; font-family: 'Cinzel'; 
+            transition: 0.2s; letter-spacing: 1px; text-transform: uppercase;
+        }
+        .nav-btn:hover:not(:disabled) { background: var(--molten-orange); color: black; border-color: black; }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Loading */
+        #map-loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: var(--molten-orange); font-family: 'Cinzel'; font-size: 2rem; pointer-events: none;
+            z-index: 1000; text-shadow: 0 4px 10px black;
+        }
+
+        /* --- POPUP STYLING --- */
+        .esri-popup__main-container {
+            background-color: #101518 !important;
+            border: 2px solid var(--rust-red) !important;
+            max-width: 350px !important;
+            max-height: 450px !important;
+            overflow-y: auto;
+            border-radius: 0 !important;
+        }
+        .esri-popup__header-title {
+            color: var(--molten-orange) !important;
+            font-family: 'Cinzel', sans-serif !important;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .esri-popup__content {
+            color: #cfd8dc !important;
+            font-family: 'EB Garamond', sans-serif !important;
+        }
+        
+        /* Custom Classes injected into Popup */
+        .popup-desc {
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .fact-box {
+            background: rgba(96, 125, 139, 0.1); 
+            border-left: 4px solid var(--molten-orange);
+            padding: 10px;
+            margin: 15px 0;
+        }
+        .fact-title {
+            color: var(--molten-orange);
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .fact-text {
+            color: #fff;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+        .ge-btn {
+            display: block;
+            width: 100%;
+            background: #263238;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            border: 1px solid #455a64;
+            box-sizing: border-box;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        .ge-btn:hover {
+            background: var(--molten-orange);
+            color: black;
+            border-color: black;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- INTRO MODAL -->
+    <div id="intro-modal">
+        <div class="intro-box">
+            <h1>The Life &amp; Travels of Marco Polo</h1>
+            <h3 style="color:#90a4ae; text-transform:uppercase; letter-spacing:2px; font-family: 'EB Garamond'; font-weight:300;">From 1254 to 1324, seventy years across the medieval world</h3>
+            <p style="color:#e0e0e0; font-size:1.1rem; margin-top:20px;">Marco Polo was born in the merchant city of Venice in 1254 and grew up to make one of the longest journeys of the Middle Ages. At seventeen he left home with his father and uncle and traveled overland along the Silk Road, crossing Persia, the high mountains of Central Asia, and the deserts of western China to reach the court of the Mongol emperor Kublai Khan.</p>
+            <p style="color:#78909c; font-size:0.9rem;">For about seventeen years Marco served the Khan, traveling on missions across the vast Mongol Empire and observing cities, customs, and trade that no European had described before. When at last the Polos were allowed to return, they sailed home by sea, threading through Southeast Asia and India before crossing Persia and the Black Sea back to Venice.</p>
+            <button class="start-btn" onclick="startApp()">Begin the Journey</button>
+        </div>
+    </div>
+
+    <!-- SIDEBAR TOGGLE -->
+    <div id="sidebar-toggle" onclick="toggleSidebar()">
+        <span class="toggle-icon">📖</span>
+        <span>Open Field Notes</span>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>Marco's Journey</h2>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('lesson')">Lesson Plan</button>
+            <button class="tab-btn" onclick="switchTab('quiz')">Quiz</button>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- TAB 1: LESSON -->
+            <div id="lesson" class="tab-content active">
+                <div class="lesson-section">
+                    <h3>🎯 Mission Objective</h3>
+                    <p>Trace Marco Polo's remarkable twenty-four year journey across continents and seas, from his birthplace in Venice to the court of Kublai Khan and back again. As you explore each location, notice how the routes he chose, the challenges he faced, and the people and places he encountered shaped his observations and made him a bridge between two worlds.</p>
+                </div>
+                <div class="lesson-section">
+                    <h3>🔍 Search Targets</h3>
+                    <p><strong>Venice, Italy:</strong> Marco's home as a merchant family where his long journey began at age seventeen and where he returned after twenty-four years</p>
+                    <p><strong>Shangdu (Xanadu), Inner Mongolia:</strong> The Khan's summer palace and the destination of Marco's three-and-a-half-year overland crossing of the Silk Road</p>
+                    <p><strong>Hangzhou (Quinsai), Jiangsu:</strong> The former Song capital that Marco called the finest city in the world, with canals and bridges like his native Venice</p>
+                    <p><strong>Quanzhou (Zaiton), China:</strong> The mighty southern seaport where Marco sailed from China with the Khan's permission, starting his long voyage home</p>
+                </div>
+                <div class="lesson-section">
+                    <h3>🧠 Critical Thinking</h3>
+                    <p><strong>Traveler's Choice:</strong> When the Polos reached Hormuz on the Persian Gulf, they decided not to sail to China by sea but instead turned back to travel overland for three more years. What factors might have convinced them that the harder path was the better choice?</p>
+                    <p><strong>Record and Witness:</strong> Marco recorded details about paper money in Khanbaliq, pepper at Quanzhou, and spirit voices in the desert at Dunhuang. What made Marco such a careful observer, and how did his written descriptions change what Europeans believed about Asia?</p>
+                    <p><strong>Risk and Reward:</strong> The journey home by sea was supposed to be faster but brought sickness and storm deaths. Looking at the route from China through Sumatra, India, and Persia, what would you have chosen, and why?</p>
+                </div>
+                <div class="lesson-section">
+                    <h3>📚 Key Vocabulary</h3>
+                    <p><span class="vocab-word">Silk Road:</span> A network of ancient overland trade routes connecting Europe with Asia, used by merchants to buy and sell goods like silk, spices, and gems for over a thousand years</p>
+                    <p><span class="vocab-word">Mongol Empire:</span> A vast territory ruled by the Mongols from the 1200s to the 1300s that stretched from China to Persia and allowed merchants like Marco Polo safe passage across Asia</p>
+                    <p><span class="vocab-word">Caravan:</span> A group of traders and merchants traveling together across deserts and mountains with goods and animals, moving in stages to reach distant markets</p>
+                    <p><span class="vocab-word">Oasis:</span> A fertile area in a desert where water is found, allowing people to rest, grow food, and gather supplies before continuing across dry, empty lands</p>
+                </div>
+            </div>
+
+                <!-- TAB 2: QUIZ -->
+            <div id="quiz" class="tab-content">
+                <p style="text-align: center; color: #888; margin-bottom:20px;">All answers can be found in the map popups.</p>
+                <div class="quiz-question">
+                    <span class="q-text">1. Why did Marco Polo and his family decide not to sail from Hormuz to China by sea?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q1" onclick="checkAnswer(this, true, 'Correct! Marco was concerned about the construction of Persian ships. (See: Hormuz, Persian Gulf)')"> They judged the local ships too flimsy and unsafe, made of planks sewn together with cord instead of nailed with iron</label>
+                        <label><input type="radio" name="q1" onclick="checkAnswer(this, false)"> They were afraid of pirates sailing in the Arabian Sea</label>
+                        <label><input type="radio" name="q1" onclick="checkAnswer(this, false)"> They wanted to visit the markets at Tabriz before going east</label>
+                        <label><input type="radio" name="q1" onclick="checkAnswer(this, false)"> They did not have enough money to pay for ship passage</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">2. What remarkable observation did Marco make about the Pamir Mountains?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q2" onclick="checkAnswer(this, true, 'Correct! Marco recorded one of the first European descriptions of high altitude effects. (See: Wakhan Corridor &amp; Pamir, Central Asia)')"> Fire burned weakly and birds did not fly there because of the high altitude and thin air</label>
+                        <label><input type="radio" name="q2" onclick="checkAnswer(this, false)"> The mountains were covered in silver and gold that miners took out of the ground</label>
+                        <label><input type="radio" name="q2" onclick="checkAnswer(this, false)"> The temperature was warmer there than in Europe during winter</label>
+                        <label><input type="radio" name="q2" onclick="checkAnswer(this, false)"> Silk Road merchants lived there permanently in mountain settlements</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">3. What city did Marco Polo call the finest and noblest city in the world?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q3" onclick="checkAnswer(this, true, 'Correct! Marco praised Hangzhou above all other cities for its beauty and commerce. (See: Hangzhou (Quinsai))')"> Hangzhou, where canals and stone bridges reminded him of his native Venice</label>
+                        <label><input type="radio" name="q3" onclick="checkAnswer(this, false)"> Quanzhou, where the greatest ports in the world brought pepper and spices</label>
+                        <label><input type="radio" name="q3" onclick="checkAnswer(this, false)"> Khanbaliq, where the Khan lived and ruled the empire</label>
+                        <label><input type="radio" name="q3" onclick="checkAnswer(this, false)"> Kashgar, where gardens and vineyards watered by mountain streams fed travelers</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">4. How did Marco Polo and his family finally leave China after seventeen years serving Kublai Khan?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q4" onclick="checkAnswer(this, true, 'Correct! The Khan allowed them to leave when they agreed to escort the princess home. (See: Quanzhou (Zaiton))')"> They sailed from Quanzhou by fleet, tasked with escorting a Mongol princess to Persia</label>
+                        <label><input type="radio" name="q4" onclick="checkAnswer(this, false)"> They escaped secretly at night on a merchant ship headed for India</label>
+                        <label><input type="radio" name="q4" onclick="checkAnswer(this, false)"> The Khan retired and gave them permission to return to Europe</label>
+                        <label><input type="radio" name="q4" onclick="checkAnswer(this, false)"> They walked back overland the same way they had come through Persia</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">5. What surprising technology did Marco observe at Khanbaliq, the Khan's capital?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q5" onclick="checkAnswer(this, true, 'Correct! Marco noted that the Khan\'s paper money astonished Europeans who only knew metal coins. (See: Khanbaliq, Beijing)')"> The city used paper money stamped by the Khan instead of metal coins</label>
+                        <label><input type="radio" name="q5" onclick="checkAnswer(this, false)"> Stone aqueducts carried fresh water through the streets like in ancient Rome</label>
+                        <label><input type="radio" name="q5" onclick="checkAnswer(this, false)"> The streets were lit at night by oil lamps burning whale blubber</label>
+                        <label><input type="radio" name="q5" onclick="checkAnswer(this, false)"> Movable houses on wheels could be rolled from place to place by the Khan's servants</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">6. What dangerous passage did the Polo fleet cross while sailing back toward Persia?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q6" onclick="checkAnswer(this, true, 'Correct! The monsoon season made the journey perilous, so they waited at the Indonesian island. (See: Sumatra, Indonesia)')"> They sheltered on Sumatra for five months to wait out monsoon storms before crossing the open Indian Ocean</label>
+                        <label><input type="radio" name="q6" onclick="checkAnswer(this, false)"> They sailed through a narrow strait where pirates attacked merchant ships</label>
+                        <label><input type="radio" name="q6" onclick="checkAnswer(this, false)"> They crossed a desert where their supplies ran out before reaching the coast</label>
+                        <label><input type="radio" name="q6" onclick="checkAnswer(this, false)"> They navigated through reefs and rocks near the coast of Champa for weeks</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">7. What did Marco describe at Quanzhou, the southern port where he sailed for home?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q7" onclick="checkAnswer(this, true, 'Correct! Marco was amazed by the volume of pepper and spices at Quanzhou. (See: Quanzhou (Zaiton))')"> It was one of the two greatest ports in the world, where ships brought so much pepper it dwarfed Europe's entire supply</label>
+                        <label><input type="radio" name="q7" onclick="checkAnswer(this, false)"> It was a small fishing village with only a few boats that could carry travelers</label>
+                        <label><input type="radio" name="q7" onclick="checkAnswer(this, false)"> It was abandoned by the Khan's government and left unguarded for merchants</label>
+                        <label><input type="radio" name="q7" onclick="checkAnswer(this, false)"> It was protected by tall stone walls built by ancient emperors centuries before</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">8. How did Marco Polo's book come to be written?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q8" onclick="checkAnswer(this, true, 'Correct! Prison became the birthplace of the famous travel narrative. (See: Genoa, Italy)')"> While imprisoned in Genoa after a sea battle, Marco dictated his travels to fellow prisoner Rustichello, who shaped them into a book</label>
+                        <label><input type="radio" name="q8" onclick="checkAnswer(this, false)"> Marco wrote it himself in Venice after returning home and spending years recording his memories</label>
+                        <label><input type="radio" name="q8" onclick="checkAnswer(this, false)"> Kublai Khan commanded Marco to write down everything he had seen before leaving China</label>
+                        <label><input type="radio" name="q8" onclick="checkAnswer(this, false)"> A Catholic priest in Venice wrote it based on stories Marco told in his final years</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">9. What unexpected loss did the Polo family suffer at Trebizond on their way home?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q9" onclick="checkAnswer(this, true, 'Correct! The loss at Trebizond reduced the fortune they hoped to bring back to Venice. (See: Trebizond (Trabzon))')"> Local officials seized much of their remaining wealth, costing them a large share of the riches they carried from the East</label>
+                        <label><input type="radio" name="q9" onclick="checkAnswer(this, false)"> Marco's father fell ill and had to stay behind while Marco and his uncle continued</label>
+                        <label><input type="radio" name="q9" onclick="checkAnswer(this, false)"> They lost most of their trade goods to a fire that destroyed the port warehouse</label>
+                        <label><input type="radio" name="q9" onclick="checkAnswer(this, false)"> Their ships were damaged in a storm and they had to leave supplies behind to reach Constantinople</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+                <div class="quiz-question">
+                    <span class="q-text">10. Which item did Marco describe seeing and understanding at Dunhuang, the desert oasis?</span>
+                    <div class="options">
+                        <label><input type="radio" name="q10" onclick="checkAnswer(this, true, 'Correct! Marco recorded both the phenomenon and the folklore of the Taklamakan Desert. (See: Dunhuang, Gansu)')"> Strange whistling sands and local beliefs that spirit voices called travelers off the path</label>
+                        <label><input type="radio" name="q10" onclick="checkAnswer(this, false)"> Underground rivers that merchants used to travel through the desert without sun exposure</label>
+                        <label><input type="radio" name="q10" onclick="checkAnswer(this, false)"> Ancient ruins of cities buried under sand, proving the desert was once fertile farmland</label>
+                        <label><input type="radio" name="q10" onclick="checkAnswer(this, false)"> Precious gemstones scattered on the surface that made travelers wealthy overnight</label>
+                    </div>
+                    <div class="feedback"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP DIV -->
+    <div id="viewDiv"></div>
+    <div id="map-loading">Charting the Silk Road...</div>
+
+    <!-- MAP HUD -->
+    <div id="timeline-hud">
+        <div class="hud-header">
+            <div class="hud-date" id="ui-date">1254</div>
+            <div>Location <span id="ui-step">1</span> of 21</div>
+        </div>
+        <div class="hud-body">
+            <h3 id="ui-title">Loading...</h3>
+            <p id="ui-desc">...</p>
+            <div class="hud-controls">
+                <button class="nav-btn" id="btn-prev">Prev</button>
+                <button class="nav-btn" id="btn-next">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ArcGIS API Logic -->
+    <script src="https://js.arcgis.com/4.28/"></script>
+    <script>
+        // Store view globally for sidebar padding
+        let mainView = null;
+
+        // --- UI FUNCTIONS ---
+        function startApp() {
+            document.getElementById('intro-modal').style.opacity = '0';
+            setTimeout(() => document.getElementById('intro-modal').style.display = 'none', 500);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const btn = document.getElementById('sidebar-toggle');
+            const text = btn.querySelector('span:last-child');
+            
+            sidebar.classList.toggle('open');
+            btn.classList.toggle('open');
+            
+            if(sidebar.classList.contains('open')) {
+                text.innerText = "Close Field Notes";
+                if(mainView && window.innerWidth > 800) {
+                    mainView.padding = { right: 500 };
+                }
+            } else {
+                text.innerText = "Open Field Notes";
+                if(mainView) {
+                    mainView.padding = { right: 0 };
+                }
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            const buttons = document.querySelectorAll('.tab-btn');
+            if(tabId === 'lesson') buttons[0].classList.add('active');
+            else buttons[1].classList.add('active');
+        }
+
+        function checkAnswer(input, isCorrect, feedbackText) {
+            const feedbackDiv = input.closest('.quiz-question').querySelector('.feedback');
+            feedbackDiv.classList.remove('correct', 'wrong');
+            if(isCorrect) {
+                feedbackDiv.innerText = feedbackText || "Correct!";
+                feedbackDiv.classList.add('correct');
+            } else {
+                feedbackDiv.innerText = "Incorrect. Check the map details again!";
+                feedbackDiv.classList.add('wrong');
+            }
+        }
+
+        // --- MAP LOGIC ---
+        require([
+            "esri/Map",
+            "esri/views/SceneView",
+            "esri/layers/GraphicsLayer",
+            "esri/Graphic",
+            "esri/geometry/Point"
+        ], function(Map, SceneView, GraphicsLayer, Graphic, Point) {
+
+            // --- DATA: STEEL HISTORY ---
+            // 'hudDesc': Narrative for the Timeline HUD (Bottom Left)
+            // 'popupDesc': Descriptive text for the Map Popup (Top Left)
+            const locations = [
+                {
+                    id: "s0", name: "Venice, Italy", lat: 45.4408, lng: 12.3155, zoom: 8, tilt: 20,
+                    date: "1254", title: "Born in Venice",
+                    hudDesc: "Marco Polo is born into a Venetian merchant family. His father and uncle are away trading in the East for much of his childhood.",
+                    popupDesc: "Marco Polo's birthplace and home port - the wealthy Italian trading republic where his journey began and ended.",
+                    fact: "Venice was a city built on water, its merchants linking Europe to the spice and silk markets of the East by sea."
+                },
+                {
+                    id: "s1", name: "Acre (Akko), Holy Land", lat: 32.9281, lng: 35.0818, zoom: 8, tilt: 20,
+                    date: "1271", title: "Setting Out for the East",
+                    hudDesc: "At seventeen Marco joins his father Niccolo and uncle Maffeo, sailing to the crusader port of Acre to begin the overland journey to the Mongol court.",
+                    popupDesc: "The Mediterranean crusader port where the seventeen-year-old Marco, his father, and uncle landed to start their overland trek east.",
+                    fact: "From Acre the Polos carried a letter and holy oil from Jerusalem that Kublai Khan had requested from the Pope."
+                },
+                {
+                    id: "s2", name: "Tabriz, Persia", lat: 38.08, lng: 46.2919, zoom: 8, tilt: 20,
+                    date: "1271", title: "Across Persia",
+                    hudDesc: "The Polos travel through the rich Persian trading city of Tabriz, where merchants from across Asia gather to buy silk, pearls, and gems.",
+                    popupDesc: "A great Persian trading hub the Polos crossed on the way east, where merchants from many lands met to buy gems and silk.",
+                    fact: "Marco marveled at Tabriz's markets, where he wrote that traders grew rich on pearls and precious stones from India."
+                },
+                {
+                    id: "s3", name: "Hormuz, Persian Gulf", lat: 27.059, lng: 56.46, zoom: 8, tilt: 20,
+                    date: "1272", title: "Turned Back at the Gulf",
+                    hudDesc: "Reaching the port of Hormuz, the Polos judge the local ships too unsafe for the sea route to China and decide to continue overland.",
+                    popupDesc: "The hot Gulf port where the Polos hoped to sail to China but judged the ships too flimsy, forcing them back onto the land route.",
+                    fact: "Marco called Hormuz's stitched-plank ships dangerous because they were sewn together with cord instead of iron nails."
+                },
+                {
+                    id: "s4", name: "Balkh, Afghanistan", lat: 36.7564, lng: 66.8972, zoom: 8, tilt: 20,
+                    date: "1273", title: "Into Central Asia",
+                    hudDesc: "The travelers pass war-scarred Balkh, an ancient Silk Road city, as they push toward the high mountains ahead.",
+                    popupDesc: "An ancient Silk Road city, half in ruins from war, that the Polos passed as they climbed toward the mountains of Central Asia.",
+                    fact: "Marco described Balkh as a once-noble city, damaged by Mongol armies but still rich in fertile gardens and orchards."
+                },
+                {
+                    id: "s5", name: "Wakhan Corridor & Pamir, Central Asia", lat: 37.05, lng: 74.49, zoom: 8, tilt: 20,
+                    date: "1273", title: "Crossing the Roof of the World",
+                    hudDesc: "The Polos climb through the Wakhan Corridor and the Pamir, among the highest mountains on Earth, where the cold and thin air amaze Marco.",
+                    popupDesc: "The lofty mountain passage, the 'Roof of the World,' where the Polos crossed some of the highest ground on Earth.",
+                    fact: "Marco wrote that the Pamir was so high and cold that fire burned weakly and birds did not fly there - one of history's first descriptions of high altitude."
+                },
+                {
+                    id: "s6", name: "Kashgar, Western China", lat: 39.4707, lng: 75.9898, zoom: 8, tilt: 20,
+                    date: "1274", title: "Resting at Kashgar",
+                    hudDesc: "After the mountains the caravan reaches the green oasis of Kashgar, gathering strength before crossing the great desert of western China.",
+                    popupDesc: "An oasis city at the western edge of China where Silk Road caravans regrouped after the mountains before crossing the great desert.",
+                    fact: "Marco admired Kashgar's gardens, vineyards, and cotton fields watered by streams from the surrounding peaks."
+                },
+                {
+                    id: "s7", name: "Dunhuang, Gansu", lat: 40.1421, lng: 94.6619, zoom: 8, tilt: 20,
+                    date: "1275", title: "Edge of the Desert",
+                    hudDesc: "At the oasis of Dunhuang the Polos finish the dangerous desert crossing, where Marco hears tales of spirit voices in the sands.",
+                    popupDesc: "A desert oasis at the eastern end of the dreaded Taklamakan crossing, dotted with Buddhist cave temples.",
+                    fact: "Marco noted the strange whistling sands of the desert and the local belief that spirit voices called travelers off the path."
+                },
+                {
+                    id: "s8", name: "Shangdu (Xanadu), Inner Mongolia", lat: 42.3597, lng: 116.1792, zoom: 8, tilt: 20,
+                    date: "1275", title: "Reaching Kublai Khan",
+                    hudDesc: "After three and a half years, the Polos arrive at Shangdu, the Khan's summer capital, and are welcomed at his marble palace in the park of Xanadu.",
+                    popupDesc: "Kublai Khan's summer capital, where the Polos finally reached the emperor after three and a half years of travel.",
+                    fact: "Marco described a vast marble palace and a movable cane pavilion in a walled park full of deer - the 'Xanadu' later made famous in English poetry."
+                },
+                {
+                    id: "s9", name: "Khanbaliq (Beijing)", lat: 39.9075, lng: 116.3972, zoom: 8, tilt: 20,
+                    date: "1276", title: "Service at the Winter Capital",
+                    hudDesc: "Marco enters the service of Kublai Khan at Khanbaliq and is sent on missions across the empire, becoming the Khan's trusted observer.",
+                    popupDesc: "The Khan's grand winter capital and the center of Marco's life in China, where he served the Mongol court for years.",
+                    fact: "Marco wrote that the city used paper money stamped by the Khan, an idea that astonished Europeans who only knew coins of metal."
+                },
+                {
+                    id: "s10", name: "Yangzhou, Jiangsu", lat: 32.3942, lng: 119.4129, zoom: 8, tilt: 20,
+                    date: "1282", title: "An Official in China",
+                    hudDesc: "Marco takes up a post in the canal city of Yangzhou, where he claims to have served the Khan's government for about three years.",
+                    popupDesc: "A wealthy canal city on the Grand Canal where Marco claimed to have held an official post under the Khan.",
+                    fact: "Marco said he governed or served in Yangzhou for about three years, likely overseeing trade or the valuable salt business."
+                },
+                {
+                    id: "s11", name: "Hangzhou (Quinsai)", lat: 30.2741, lng: 120.1551, zoom: 8, tilt: 20,
+                    date: "1284", title: "The City of Heaven",
+                    hudDesc: "Traveling through southern China, Marco visits Hangzhou and calls it the finest city in the world, its canals reminding him of Venice.",
+                    popupDesc: "The former Song capital that Marco praised above all other cities, calling it the finest and noblest in the world.",
+                    fact: "Marco named it 'Quinsai' and marveled at its lake, stone bridges, and crowded canals that reminded him of his native Venice."
+                },
+                {
+                    id: "s12", name: "Quanzhou (Zaiton)", lat: 24.9167, lng: 118.5833, zoom: 8, tilt: 20,
+                    date: "1292", title: "Sailing for Home",
+                    hudDesc: "Tasked with escorting a Mongol princess to Persia, the Polos board a fleet at the great port of Quanzhou and set sail south.",
+                    popupDesc: "The mighty southern seaport from which the Polos finally sailed for home, escorting a Mongol princess to Persia.",
+                    fact: "Marco called Zaiton one of the two greatest ports in the world, where ships brought so much pepper that it dwarfed Europe's entire supply."
+                },
+                {
+                    id: "s13", name: "Champa Coast, Vietnam", lat: 13.782, lng: 109.219, zoom: 8, tilt: 20,
+                    date: "1292", title: "Along the Champa Coast",
+                    hudDesc: "The fleet skirts the coast of Champa in Southeast Asia, where Marco records a land of elephants and rich ebony forests.",
+                    popupDesc: "An early stop on the long sea voyage home, along the coast of what is now central Vietnam.",
+                    fact: "Marco described Champa as a land rich in ebony wood and elephants, ruled by a king with many sons and daughters."
+                },
+                {
+                    id: "s14", name: "Sumatra, Indonesia", lat: 5.5483, lng: 95.3238, zoom: 8, tilt: 20,
+                    date: "1292", title: "Five Months on Sumatra",
+                    hudDesc: "The ships shelter on Sumatra for five months, waiting out monsoon storms before daring the open crossing of the Indian Ocean.",
+                    popupDesc: "The tropical island where the fleet sheltered for five months to wait out monsoon storms before crossing the Indian Ocean.",
+                    fact: "Marco recorded coconuts, spices, and a tree whose flour the people made into bread - and warned of fierce wildlife in the forests."
+                },
+                {
+                    id: "s15", name: "Ceylon (Sri Lanka)", lat: 7.2906, lng: 80.6337, zoom: 8, tilt: 20,
+                    date: "1293", title: "The Island of Gems",
+                    hudDesc: "The fleet touches Ceylon, which Marco praises for its rubies and sapphires and its sacred pilgrimage mountain.",
+                    popupDesc: "The island the fleet touched on the homeward route, famed for its gems and as a sacred place of pilgrimage.",
+                    fact: "Marco claimed Ceylon produced the finest rubies and sapphires on Earth, and described a holy mountain climbed by pilgrims."
+                },
+                {
+                    id: "s16", name: "Malabar Coast, India", lat: 8.8932, lng: 76.6141, zoom: 8, tilt: 20,
+                    date: "1293", title: "The Pepper Coast of India",
+                    hudDesc: "Following India's Malabar coast, Marco describes pearl divers and the spice trade that made the region famous across the world.",
+                    popupDesc: "The pepper-rich southwestern coast of India that the fleet followed on its way back toward Persia.",
+                    fact: "Marco described divers gathering pearls and merchants trading the pepper and ginger that Europe prized so highly."
+                },
+                {
+                    id: "s17", name: "Hormuz, Persian Gulf (return)", lat: 27.059, lng: 56.46, zoom: 8, tilt: 20,
+                    date: "1294", title: "Back to Persia",
+                    hudDesc: "The long sea voyage ends at Hormuz with the princess safely delivered, though storms and sickness have claimed most of the travelers.",
+                    popupDesc: "The Persian Gulf port where the long sea voyage ended and the Polos stepped back onto the soil of Asia, the princess delivered safely.",
+                    fact: "By the time the fleet reached Hormuz, sickness and storms at sea had killed most of the hundreds who first set sail."
+                },
+                {
+                    id: "s18", name: "Trebizond (Trabzon)", lat: 41.005, lng: 39.7269, zoom: 8, tilt: 20,
+                    date: "1295", title: "The Last Leg Home",
+                    hudDesc: "Crossing Persia and the Black Sea, the Polos reach Trebizond, where officials seize much of the wealth they have carried from the East.",
+                    popupDesc: "A Black Sea port the Polos reached on the last overland leg before sailing the final stretch toward home.",
+                    fact: "Local officials seized much of the family's remaining wealth at Trebizond, costing them a large share of the riches they had carried from the East."
+                },
+                {
+                    id: "s19", name: "Constantinople (Istanbul)", lat: 41.0082, lng: 28.9784, zoom: 8, tilt: 20,
+                    date: "1295", title: "Return to Venice",
+                    hudDesc: "Passing through Constantinople, the family sails home and reaches Venice after twenty-four years away, scarcely recognized by their relatives.",
+                    popupDesc: "The great gateway between the Black Sea and the Mediterranean that the Polos passed on their voyage back to Venice.",
+                    fact: "From Constantinople the family sailed the familiar Mediterranean home, arriving in Venice after twenty-four years away."
+                },
+                {
+                    id: "s20", name: "Genoa, Italy", lat: 44.4056, lng: 8.9463, zoom: 8, tilt: 20,
+                    date: "1298", title: "A Book Born in Prison",
+                    hudDesc: "Captured in a war with Genoa, Marco dictates his travels to a fellow prisoner, creating the book that will open Asia to Europe for centuries.",
+                    popupDesc: "The rival city where Marco was held prisoner after a sea battle - and where he dictated the book that made him famous.",
+                    fact: "In a Genoese cell Marco told his travels to a fellow prisoner, the writer Rustichello, who shaped them into 'The Travels of Marco Polo.'"
+                }
+            ];
+
+            const map = new Map({
+                basemap: "satellite",
+                ground: "world-elevation"
+            });
+
+            // Initialize View with Smart Layout
+            mainView = new SceneView({
+                container: "viewDiv",
+                map: map,
+                qualityProfile: "high",
+                camera: { position: { x: 75, y: 38, z: 8200000 }, tilt: 0 },
+                environment: {
+                    lighting: { type: "virtual" },
+                    atmosphereEnabled: false
+                },
+                // DOCK POPUP TOP-LEFT to separate from Sidebar
+                popup: {
+                    dockEnabled: true,
+                    dockOptions: {
+                        position: "top-left",
+                        breakpoint: false,
+                        buttonEnabled: false
+                    }
+                }
+            });
+
+            const graphicsLayer = new GraphicsLayer();
+            map.add(graphicsLayer);
+
+            // Create Graphics
+            const symbol = {
+                type: "point-3d",
+                symbolLayers: [{
+                    type: "icon",
+                    size: 24,
+                    resource: { primitive: "circle" },
+                    material: { color: "#d9a72e" }, /* Molten Orange */
+                    outline: { color: "#a3361f", size: 2 } /* Steel Grey */
+                }],
+                verticalOffset: { screenLength: 40, maxWorldLength: 50000, minWorldLength: 1000 },
+                callout: { type: "line", size: 1.5, color: "#a3361f" }
+            };
+
+            const graphics = locations.map(loc => {
+                let range = 5000;
+                if(loc.zoom < 10) range = 100000;
+                else if(loc.zoom < 13) range = 20000;
+                else if(loc.zoom < 15) range = 5000;
+                else range = 1000;
+
+                const geUrl = `https://earth.google.com/web/@${loc.lat},${loc.lng},100a,${range}d,${loc.tilt}t,0h`;
+
+                return new Graphic({
+                    geometry: { type: "point", longitude: loc.lng, latitude: loc.lat },
+                    symbol: symbol,
+                    attributes: { ...loc, geUrl: geUrl },
+                    popupTemplate: {
+                        title: "{name}",
+                        content: `
+                            <div class="popup-desc">{popupDesc}</div>
+                            <div class="fact-box">
+                                <span class="fact-title">💡 Did You Know?</span>
+                                <span class="fact-text">{fact}</span>
+                            </div>
+                            <a href="{geUrl}" target="_blank" class="ge-btn">Open in Google Earth 🌎</a>
+                        `
+                    }
+                });
+            });
+            graphicsLayer.addMany(graphics);
+
+            let currentIndex = 0;
+
+            function updateView(index) {
+                if (index < 0 || index >= locations.length) return;
+                
+                currentIndex = index;
+                const loc = locations[currentIndex];
+                const graphic = graphics[currentIndex];
+                
+                // Update HUD
+                document.getElementById('ui-date').innerText = loc.date;
+                document.getElementById('ui-step').innerText = currentIndex + 1;
+                document.getElementById('ui-title').innerText = loc.title;
+                document.getElementById('ui-desc').innerText = loc.hudDesc; // Uses Narrative Description
+
+                // Open popup immediately so it always matches the timeline (docked, animation-independent)
+                mainView.popup.open({
+                    features: [graphic],
+                    location: graphic.geometry
+                });
+
+                // Fly To Location (ignore supersede rejection when navigating quickly)
+                mainView.goTo({
+                    target: [loc.lng, loc.lat],
+                    zoom: loc.zoom,
+                    tilt: loc.tilt,
+                    heading: 0
+                }, { speedFactor: 0.5, easing: "in-out-cubic" }).catch(() => {});
+
+                // Update Buttons
+                document.getElementById('btn-prev').disabled = currentIndex === 0;
+                document.getElementById('btn-next').disabled = currentIndex === locations.length - 1;
+            }
+
+            // Init
+            mainView.when(() => {
+                document.getElementById('map-loading').style.display = 'none';
+                
+                const startLoc = locations[0];
+                document.getElementById('ui-date').innerText = startLoc.date;
+                document.getElementById('ui-step').innerText = "1";
+                document.getElementById('ui-title').innerText = startLoc.title;
+                document.getElementById('ui-desc').innerText = startLoc.hudDesc;
+                
+                mainView.goTo({
+                    target: [startLoc.lng, startLoc.lat],
+                    zoom: startLoc.zoom,
+                    tilt: startLoc.tilt
+                }, { animate: false }).catch(() => {});
+                mainView.popup.open({
+                    features: [graphics[0]],
+                    location: graphics[0].geometry
+                });
+            });
+
+            // Bind Events
+            document.getElementById('btn-next').addEventListener('click', () => {
+                updateView(currentIndex + 1);
+            });
+            document.getElementById('btn-prev').addEventListener('click', () => {
+                updateView(currentIndex - 1);
+            });
+
+        });
+    </script>
+</body>
+</html>

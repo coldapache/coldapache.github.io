@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Play - Micah's Learning Resources</title>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--blue:#1a4f8a;--blue-dark:#0f2f52;--gold:#f0a832;--ink:#20242b}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Source Sans 3',system-ui,sans-serif;background:#0f2f52;
+    display:flex;flex-direction:column;height:100vh}
+  .bar{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--blue-dark);color:#fff;
+    flex:0 0 auto;flex-wrap:wrap}
+  .bar .back{color:#cfe0f5;font-weight:600;text-decoration:none;white-space:nowrap}
+  .bar .back:hover{color:#fff}
+  .bar h1{font-family:'Zilla Slab',serif;font-size:1.1rem;margin:0;flex:1;min-width:180px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .cta{background:var(--gold);color:#231a05;font-weight:700;text-decoration:none;
+    padding:9px 18px;border-radius:8px;white-space:nowrap;font-size:.95rem}
+  .bar .cta:hover{filter:brightness(1.08)}
+  iframe{flex:1;width:100%;border:0;background:#fff}
+</style>
+</head>
+<body>
+<div class="bar">
+  <a class="back" href="index.html">&larr; All resources</a>
+  <h1 id="title">Loading...</h1>
+  <a class="cta" id="tpt" href="#" target="_blank" rel="noopener">Get the full version on TPT &rarr;</a>
+</div>
+<iframe id="frame" src="about:blank" title="Interactive resource" allow="fullscreen"></iframe>
+<script src="catalog.js"></script>
+<script>
+  const slug = new URLSearchParams(location.search).get('p');
+  const all = CATALOG.concat(FREEMAPS);
+  const p = all.find(x => x.slug === slug);
+  if (p) {
+    document.getElementById('title').textContent = p.title;
+    document.title = p.title + " - Micah's Learning Resources";
+    document.getElementById('tpt').href = p.tpt || STORE;
+    document.getElementById('frame').src = 'apps/' + p.slug + '.html';
+  } else {
+    location.replace('index.html');
+  }
+</script>
+</body>
+</html>

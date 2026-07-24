@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1929 Stock Market Crash Investigation Lab</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --vault:#1a2332; --ledger:#0d1b0d; --gold:#c9a227; --ticker:#2e7d32;
+  --crash:#c62828; --paper:#f5f0e1; --ink:#1a1a1a; --margin:#b71c1c;
+  --boom:#1B5E20; --bust:#8B0000; --recovery:#1565C0; --depression:#4a1a2e;
+  --card-bg:#faf7ef; --border:#d4c9a8;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
+.tab-bar{display:flex;background:var(--vault);border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:100;}
+.tab-btn{flex:1;padding:14px 8px;color:#ccc;background:transparent;border:none;cursor:pointer;font-size:15px;font-weight:600;transition:all .2s;text-align:center;}
+.tab-btn.active{color:var(--gold);background:rgba(201,162,39,.12);border-bottom:3px solid var(--gold);}
+.tab-btn:hover{color:#fff;background:rgba(255,255,255,.06);}
+.tab-content{display:none;padding:0;min-height:80vh;}
+.tab-content.active{display:block;}
+
+/* Investigation Tab */
+.hero{background:linear-gradient(135deg,var(--vault) 0%,var(--ledger) 100%);padding:40px 30px 30px;text-align:center;color:#fff;}
+.hero h1{font-size:2.2em;color:var(--gold);margin-bottom:8px;letter-spacing:1px;}
+.hero .subtitle{font-size:1.15em;color:#b8c9b0;margin-bottom:20px;max-width:750px;margin-left:auto;margin-right:auto;}
+.hero .framing{background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.3);border-radius:10px;padding:16px 24px;font-style:italic;color:#d4c9a8;max-width:700px;margin:0 auto;font-size:1.05em;}
+
+.chart-section{background:#fff;margin:24px auto;max-width:900px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);padding:24px;border:1px solid var(--border);}
+.chart-section h2{color:var(--vault);font-size:1.3em;margin-bottom:12px;text-align:center;}
+.chart-container{position:relative;width:100%;height:340px;}
+
+.stations-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;padding:20px 30px;max-width:1100px;margin:0 auto;}
+.station-card{background:var(--card-bg);border:2px solid var(--border);border-radius:12px;padding:24px;transition:transform .2s,box-shadow .2s;cursor:pointer;}
+.station-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12);}
+.station-num{display:inline-block;background:var(--vault);color:var(--gold);width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:700;font-size:14px;margin-bottom:10px;}
+.station-card h3{color:var(--vault);font-size:1.15em;margin-bottom:6px;}
+.station-card .station-sub{color:#666;font-size:.9em;margin-bottom:12px;}
+.station-card .open-btn{display:inline-block;background:var(--ticker);color:#fff;padding:8px 20px;border-radius:6px;border:none;cursor:pointer;font-weight:600;font-size:.9em;transition:background .2s;}
+.station-card .open-btn:hover{background:var(--boom);}
+
+/* Evidence Log Sidebar */
+.investigation-layout{display:flex;gap:20px;padding:0 20px 30px;max-width:1200px;margin:0 auto;}
+.main-area{flex:1;min-width:0;}
+.evidence-sidebar{width:280px;flex-shrink:0;}
+.evidence-panel{background:var(--vault);color:#fff;border-radius:12px;padding:20px;position:sticky;top:70px;}
+.evidence-panel h3{color:var(--gold);margin-bottom:4px;font-size:1.1em;}
+.evidence-progress{color:#8fa;font-size:.85em;margin-bottom:14px;}
+.evidence-item{background:rgba(255,255,255,.06);border:1px solid rgba(201,162,39,.2);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:.85em;color:#ccc;}
+.evidence-item.collected{border-color:var(--gold);background:rgba(201,162,39,.1);color:#fff;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;justify-content:center;align-items:center;padding:20px;}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--paper);border-radius:14px;max-width:800px;width:100%;max-height:85vh;overflow-y:auto;padding:30px;position:relative;}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.6em;cursor:pointer;color:#666;line-height:1;}
+.modal h2{color:var(--vault);font-size:1.5em;margin-bottom:4px;padding-right:40px;}
+.modal .modal-sub{color:#666;font-size:.95em;margin-bottom:16px;font-style:italic;}
+.modal .context-box{background:rgba(46,125,50,.06);border-left:4px solid var(--ticker);padding:14px 18px;margin-bottom:18px;border-radius:0 8px 8px 0;font-size:.95em;}
+.artifact{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;}
+.artifact h4{color:var(--vault);margin-bottom:6px;font-size:1em;}
+.artifact .artifact-content{color:#444;font-size:.92em;}
+.artifact .source-tag{display:inline-block;background:var(--vault);color:var(--gold);padding:2px 10px;border-radius:12px;font-size:.75em;margin-top:8px;}
+.analysis-q{background:rgba(201,162,39,.08);border:2px solid var(--gold);border-radius:10px;padding:16px;margin-top:16px;}
+.analysis-q h4{color:var(--vault);margin-bottom:6px;}
+.analysis-q textarea{width:100%;height:70px;border:1px solid var(--border);border-radius:6px;padding:10px;font-family:inherit;font-size:.9em;resize:vertical;}
+.log-btn{background:var(--ticker);color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-weight:600;margin-top:8px;font-size:.9em;}
+.log-btn:hover{background:var(--boom);}
+
+/* Argument Builder */
+.argument-builder{background:var(--card-bg);border:2px solid var(--gold);border-radius:12px;padding:24px;margin:20px auto;max-width:800px;}
+.argument-builder h2{color:var(--vault);margin-bottom:12px;font-size:1.3em;}
+.thesis-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.thesis-opt{padding:12px 14px;border:2px solid var(--border);border-radius:8px;cursor:pointer;font-size:.9em;transition:all .2s;background:#fff;}
+.thesis-opt:hover{border-color:var(--gold);}
+.thesis-opt.selected{border-color:var(--gold);background:rgba(201,162,39,.1);}
+.argument-area textarea{width:100%;height:100px;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:inherit;font-size:.95em;resize:vertical;}
+
+/* Teacher Resources Tab */
+.teacher-tab{padding:30px;max-width:900px;margin:0 auto;}
+.teacher-tab h2{color:var(--vault);font-size:1.6em;margin-bottom:16px;border-bottom:3px solid var(--gold);padding-bottom:8px;}
+.teacher-section{margin-bottom:28px;}
+.teacher-section h3{color:var(--ticker);font-size:1.15em;margin-bottom:10px;}
+.teacher-section h4{color:var(--vault);margin-top:12px;margin-bottom:6px;}
+.teacher-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px;}
+.teacher-card h4{color:var(--vault);margin-bottom:8px;}
+.source-block{background:rgba(201,162,39,.06);border-left:3px solid var(--gold);padding:12px 16px;margin:10px 0;border-radius:0 8px 8px 0;font-style:italic;font-size:.95em;}
+.disc-q{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;}
+.disc-q strong{color:var(--vault);}
+.disc-q .sample-answer{color:#555;font-size:.9em;margin-top:6px;padding-left:14px;border-left:2px solid var(--ticker);}
+
+/* Quiz Tab */
+.quiz-tab{padding:30px;max-width:800px;margin:0 auto;}
+.quiz-tab h2{color:var(--vault);font-size:1.6em;margin-bottom:20px;text-align:center;}
+.quiz-q{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px;}
+.quiz-q .q-num{display:inline-block;background:var(--vault);color:var(--gold);width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-weight:700;font-size:13px;margin-right:8px;}
+.quiz-q .q-text{font-weight:600;color:var(--ink);margin-bottom:10px;}
+.quiz-q label{display:block;padding:6px 0 6px 24px;cursor:pointer;position:relative;font-size:.95em;}
+.quiz-q label input{margin-right:8px;}
+.quiz-q .feedback{display:none;padding:10px 14px;border-radius:6px;margin-top:8px;font-size:.9em;}
+.quiz-q .feedback.correct{display:block;background:#e8f5e9;color:var(--boom);border:1px solid #a5d6a7;}
+.quiz-q .feedback.incorrect{display:block;background:#ffebee;color:var(--crash);border:1px solid #ef9a9a;}
+.quiz-controls{text-align:center;margin-top:20px;}
+.quiz-submit{background:var(--ticker);color:#fff;padding:12px 36px;border:none;border-radius:8px;font-size:1.05em;font-weight:600;cursor:pointer;}
+.quiz-submit:hover{background:var(--boom);}
+.quiz-score{text-align:center;font-size:1.3em;color:var(--vault);font-weight:700;margin-top:16px;display:none;}
+
+/* Print Worksheet Tab */
+.print-tab{padding:30px;max-width:850px;margin:0 auto;}
+.print-tab h2{color:var(--vault);font-size:1.6em;margin-bottom:20px;text-align:center;border-bottom:3px solid var(--gold);padding-bottom:8px;}
+.ws-section{margin-bottom:24px;}
+.ws-section h3{color:var(--vault);font-size:1.15em;margin-bottom:10px;border-bottom:2px solid var(--border);padding-bottom:4px;}
+.ws-question{margin-bottom:14px;}
+.ws-question p{margin-bottom:6px;}
+.ws-line{border-bottom:1px solid #999;height:28px;margin-bottom:4px;}
+.vocab-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;}
+.vocab-term,.vocab-def{padding:8px 12px;border:1px solid var(--border);font-size:.9em;}
+.vocab-term{background:#f0ece0;font-weight:600;}
+.vocab-def{background:#fff;}
+.ws-answer-key{margin-top:30px;background:#f9f6ed;border:2px solid var(--gold);border-radius:10px;padding:20px;}
+.ws-answer-key h3{color:var(--vault);border-bottom:2px solid var(--gold);padding-bottom:6px;margin-bottom:12px;}
+.ws-answer-key ol,.ws-answer-key ul{padding-left:22px;}
+.ws-answer-key li{margin-bottom:4px;font-size:.9em;}
+.print-btn{display:block;margin:0 auto 20px;background:var(--ticker);color:#fff;padding:10px 30px;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;}
+.print-btn:hover{background:var(--boom);}
+
+@media print{
+  .tab-bar,.print-btn,.no-print{display:none!important;}
+  .tab-content{display:none!important;}
+  .tab-content.print-active{display:block!important;}
+  body{background:#fff;font-size:11pt;}
+  .print-tab{padding:0;max-width:100%;}
+  .ws-section{page-break-inside:auto;}
+  .ws-question{page-break-inside:avoid;}
+  .ws-answer-key{page-break-before:always;}
+}
+@media(max-width:768px){
+  .investigation-layout{flex-direction:column;}
+  .evidence-sidebar{width:100%;}
+  .stations-grid{grid-template-columns:1fr;}
+  .thesis-options{grid-template-columns:1fr;}
+  .hero h1{font-size:1.6em;}
+}
+</style>
+</head>
+<body>
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('investigate')">The Investigation</button>
+  <button class="tab-btn" onclick="switchTab('teacher')">Teacher Resources</button>
+  <button class="tab-btn" onclick="switchTab('quiz')">Quiz</button>
+  <button class="tab-btn" onclick="switchTab('print')">Print Worksheet</button>
+</div>
+
+<!-- ==================== TAB 1: INVESTIGATION ==================== -->
+<div id="tab-investigate" class="tab-content active">
+  <div class="hero">
+    <h1>1929 Stock Market Crash Investigation Lab</h1>
+    <p class="subtitle">The End of the Roaring Twenties and the Beginning of the Great Depression</p>
+    <div class="framing">
+      "October 1929. The longest bull market in American history ended in catastrophe. You are an economic historian investigating: Was the crash inevitable, and why did a stock market decline become the worst economic disaster in modern history?"
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>Dow Jones Industrial Average, 1920-1935</h2>
+    <div class="chart-container">
+      <canvas id="dowChart"></canvas>
+    </div>
+  </div>
+
+  <div class="investigation-layout">
+    <div class="main-area">
+      <div class="stations-grid">
+        <div class="station-card" onclick="openStation(0)">
+          <span class="station-num">1</span>
+          <h3>THE BOOM</h3>
+          <p class="station-sub">Why did stocks rise 500% in a decade? Explore the forces driving the Roaring Twenties bull market.</p>
+          <button class="open-btn">Open Investigation</button>
+        </div>
+        <div class="station-card" onclick="openStation(1)">
+          <span class="station-num">2</span>
+          <h3>THE WARNING SIGNS</h3>
+          <p class="station-sub">What economists saw but investors ignored. The cracks beneath the surface of 1920s prosperity.</p>
+          <button class="open-btn">Open Investigation</button>
+        </div>
+        <div class="station-card" onclick="openStation(2)">
+          <span class="station-num">3</span>
+          <h3>THE CRASH</h3>
+          <p class="station-sub">Five days that shattered Wall Street. A day-by-day breakdown of Black Thursday through Black Tuesday.</p>
+          <button class="open-btn">Open Investigation</button>
+        </div>
+        <div class="station-card" onclick="openStation(3)">
+          <span class="station-num">4</span>
+          <h3>THE CONTAGION</h3>
+          <p class="station-sub">How a Wall Street crisis became a Main Street catastrophe. From stock prices to bread lines.</p>
+          <button class="open-btn">Open Investigation</button>
+        </div>
+        <div class="station-card" onclick="openStation(4)">
+          <span class="station-num">5</span>
+          <h3>THE LESSONS</h3>
+          <p class="station-sub">The reforms that followed and why the same patterns appeared again in 2008.</p>
+          <button class="open-btn">Open Investigation</button>
+        </div>
+      </div>
+
+      <div class="argument-builder">
+        <h2>Final Assessment: Build Your Argument</h2>
+        <p style="margin-bottom:12px;color:#555;">Based on your investigation, was the 1929 crash inevitable? What could have prevented the Depression?</p>
+        <div class="thesis-options">
+          <div class="thesis-opt" onclick="selectThesis(this)">The crash was inevitable. Speculative bubbles always burst, and no policy could have stopped it.</div>
+          <div class="thesis-opt" onclick="selectThesis(this)">The crash was preventable. Better Federal Reserve policy and margin regulations could have deflated the bubble gradually.</div>
+          <div class="thesis-opt" onclick="selectThesis(this)">The crash was one thing; the Depression was another. The crash was unavoidable, but the Depression resulted from terrible policy responses afterward.</div>
+          <div class="thesis-opt" onclick="selectThesis(this)">Multiple systemic failures. The crash exposed structural weaknesses (inequality, agricultural crisis, weak banking) that made a Depression nearly certain.</div>
+        </div>
+        <label style="font-weight:600;color:var(--vault);display:block;margin-bottom:6px;">Support your thesis with evidence from at least 3 stations:</label>
+        <div class="argument-area">
+          <textarea placeholder="Use specific evidence from the stations to build your argument..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="evidence-sidebar">
+      <div class="evidence-panel">
+        <h3>Evidence Log</h3>
+        <p class="evidence-progress"><span id="evidenceCount">0</span>/5 stations investigated</p>
+        <div id="evidenceList">
+          <div class="evidence-item" id="ev0">Station 1: The Boom - not yet investigated</div>
+          <div class="evidence-item" id="ev1">Station 2: Warning Signs - not yet investigated</div>
+          <div class="evidence-item" id="ev2">Station 3: The Crash - not yet investigated</div>
+          <div class="evidence-item" id="ev3">Station 4: The Contagion - not yet investigated</div>
+          <div class="evidence-item" id="ev4">Station 5: The Lessons - not yet investigated</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Station Modal -->
+<div class="modal-overlay" id="stationModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h2 id="modalTitle"></h2>
+    <p class="modal-sub" id="modalSub"></p>
+    <div class="context-box" id="modalContext"></div>
+    <div id="modalArtifacts"></div>
+    <div class="analysis-q">
+      <h4>Analysis Question</h4>
+      <p id="modalQuestion"></p>
+      <textarea id="modalAnswer" placeholder="Write your analysis here..."></textarea>
+      <button class="log-btn" onclick="logEvidence()">Log to Evidence</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 2: TEACHER RESOURCES ==================== -->
+<div id="tab-teacher" class="tab-content">
+<div class="teacher-tab">
+  <h2>Teacher Resources</h2>
+
+  <div class="teacher-section">
+    <h3>How to Teach This</h3>
+    <div class="teacher-card">
+      <h4>6 Teaching Strategies</h4>
+      <ol style="padding-left:20px;">
+        <li><strong>Start with the chart.</strong> Display the Dow Jones chart and ask: "What do you see? What might explain these changes?" Let students hypothesize before investigating.</li>
+        <li><strong>Jigsaw the stations.</strong> Assign each group 1-2 stations. Groups become experts on their topic and present findings to the class before the final assessment.</li>
+        <li><strong>Connect to today.</strong> Before Station 5, have students brainstorm: "Could a crash like this happen today?" Then let the station provide the answer.</li>
+        <li><strong>Use the margin buying math.</strong> Walk through the math of margin buying on the board: $1,000 invested, $9,000 borrowed, stock drops 10%. Students calculate the loss. This makes the mechanics concrete.</li>
+        <li><strong>Primary source close reading.</strong> Use the Hoover quotes and newspaper headlines for a mini-lesson on sourcing and perspective. Why did leaders say what they said?</li>
+        <li><strong>Financial literacy bridge.</strong> End with a class discussion: "What lessons from 1929 apply to your personal finances today?" Great transition to a personal finance unit.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="teacher-section">
+    <h3>Economics Primer for Non-Economics Teachers</h3>
+    <div class="teacher-card">
+      <h4>Key Concepts Students Need</h4>
+      <p><strong>Margin Buying:</strong> Purchasing stocks with borrowed money. In the 1920s, investors could buy stocks with just 10% down and borrow the rest from brokers. If the stock price rose, great. If it fell, the broker demanded immediate repayment (a "margin call"), forcing the investor to sell at a loss.</p>
+      <p style="margin-top:10px;"><strong>Speculation:</strong> Buying assets not for their underlying value but because you expect the price to keep rising. By 1929, millions of Americans were buying stocks they knew nothing about, assuming prices would go up forever.</p>
+      <p style="margin-top:10px;"><strong>Bubble Dynamics:</strong> A bubble forms when asset prices far exceed their actual value, driven by optimism and herd behavior. Everyone buys because everyone else is buying. The longer it inflates, the worse the pop.</p>
+      <p style="margin-top:10px;"><strong>Liquidity:</strong> How easily assets can be converted to cash. During a crash, everyone tries to sell at once, but there are no buyers. Prices collapse because liquidity evaporates.</p>
+      <p style="margin-top:10px;"><strong>Federal Reserve Policy:</strong> The Fed controls interest rates and money supply. In 1928-29, the Fed raised rates to cool speculation, but this also squeezed businesses. After the crash, the Fed failed to expand the money supply, worsening the Depression.</p>
+      <p style="margin-top:10px;"><strong>Bank Runs:</strong> When depositors lose confidence in a bank and rush to withdraw their money. Since banks loan out most deposits, they cannot pay everyone at once, leading to bank failure. This was pre-FDIC, so there was no deposit insurance.</p>
+    </div>
+  </div>
+
+  <div class="teacher-section">
+    <h3>Historical Context: The Roaring Twenties</h3>
+    <div class="teacher-card">
+      <p>The 1920s saw genuine economic growth. Automobiles, radio, electricity, and consumer goods transformed American life. Industrial production doubled. The middle class expanded. But beneath the prosperity lay deep structural problems: farmers were in depression throughout the decade, wealth inequality reached extreme levels, consumer debt soared, and the stock market became a casino where shoeshine boys and taxi drivers traded tips on stocks they could not afford.</p>
+      <p style="margin-top:10px;">It is important that students understand: the 1920s were not fake prosperity. Real innovation occurred. But the financial system built on top of that real growth was fragile, speculative, and unregulated. The crash did not cause the Depression by itself. The Depression resulted from the interaction between the crash and pre-existing weaknesses in banking, agriculture, trade policy, and income distribution.</p>
+    </div>
+  </div>
+
+  <div class="teacher-section">
+    <h3>Connection to 2008 Financial Crisis</h3>
+    <div class="teacher-card">
+      <p>Students will naturally ask "Could this happen again?" The answer is: it did, in 2008. The parallels are striking:</p>
+      <ul style="padding-left:20px;margin-top:8px;">
+        <li>1929: Stocks bought on margin. 2008: Houses bought with subprime mortgages.</li>
+        <li>1929: Everyone believed stocks only go up. 2008: Everyone believed housing prices only go up.</li>
+        <li>1929: Regulators looked the other way. 2008: Regulators looked the other way.</li>
+        <li>1929: Complex financial instruments (investment trusts). 2008: Complex financial instruments (mortgage-backed securities, CDOs).</li>
+        <li>Key difference: In 2008, the Fed and government intervened aggressively (bailouts, stimulus). In 1929-32, they did not. This is why 2008 produced a recession, not a depression.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="teacher-section">
+    <h3>Primary Sources</h3>
+    <div class="teacher-card">
+      <h4>1. New York Times, October 25, 1929</h4>
+      <div class="source-block">"WORST STOCK CRASH STEMMED BY BANKS; 12,894,650-Share Day Swamps Market. LEADERS CONFER, FIND CONDITIONS SOUND."</div>
+      <p style="font-size:.9em;color:#555;">Context: This was the day after Black Thursday. Note the headline's emphasis on bankers' confidence. The "leaders" were five major bankers who pooled money to buy stocks and halt the panic. It worked for exactly two days.</p>
+    </div>
+    <div class="teacher-card">
+      <h4>2. Jesse Livermore, Wall Street Trader</h4>
+      <div class="source-block">"There is nothing new in Wall Street. There can't be because speculation is as old as the hills. Whatever happens in the stock market today has happened before and will happen again."</div>
+      <p style="font-size:.9em;color:#555;">Context: Livermore was known as the "Great Bear of Wall Street." He made $100 million (over $1.5 billion today) by short-selling during the 1929 crash. His quote underscores the cyclical nature of financial panics.</p>
+    </div>
+    <div class="teacher-card">
+      <h4>3. Herbert Hoover, March 1930</h4>
+      <div class="source-block">"The fundamental business of the country, that is, production and distribution of commodities, is on a sound and prosperous basis... We have now passed the worst."</div>
+      <p style="font-size:.9em;color:#555;">Context: Hoover said this four months after the crash. Unemployment was already rising rapidly. The worst was far from over. This quote illustrates how leaders underestimated the crisis and prioritized confidence over accuracy.</p>
+    </div>
+    <div class="teacher-card">
+      <h4>4. John Kenneth Galbraith, "The Great Crash 1929" (1955)</h4>
+      <div class="source-block">"The sense of responsibility in the financial community for the community as a whole is not small. It is nearly nil. Perhaps this is inherent. In a community where the weights are given to what people own rather than what people are, it is inevitable."</div>
+      <p style="font-size:.9em;color:#555;">Context: Galbraith's book remains the definitive account of the crash. Written 26 years later with full historical perspective, it examines how greed, groupthink, and lack of accountability enabled the disaster.</p>
+    </div>
+  </div>
+
+  <div class="teacher-section">
+    <h3>Discussion Questions with Sample Answers</h3>
+    <div class="disc-q">
+      <strong>1. Why did so many ordinary Americans invest in stocks during the 1920s, even people who had never invested before?</strong>
+      <div class="sample-answer">Several factors: margin buying made stocks accessible to people without much capital. Success stories in newspapers created FOMO. The widespread availability of "investment trusts" (early mutual funds) made the market seem safe. And genuine economic growth made optimism feel rational, not reckless.</div>
+    </div>
+    <div class="disc-q">
+      <strong>2. Was the Federal Reserve more responsible for causing the crash or for making the Depression worse?</strong>
+      <div class="sample-answer">Arguably more responsible for the Depression. The Fed raised rates in 1928-29 to cool speculation, which contributed to the crash but was defensible policy. However, its failure to expand the money supply after the crash (letting it contract by 1/3) and failure to rescue failing banks turned a stock market correction into a systemic collapse. Milton Friedman and Ben Bernanke both argued the Fed's inaction was the single biggest cause of the Depression's severity.</div>
+    </div>
+    <div class="disc-q">
+      <strong>3. How does the 1929 crash compare to the 2008 financial crisis? What was the most important difference in outcome?</strong>
+      <div class="sample-answer">Both involved speculative bubbles built on borrowed money (stocks/margin in 1929, housing/mortgages in 2008), both featured inadequate regulation, and both spread globally. The key difference was the government response: in 2008, the Fed and Treasury intervened with massive bailouts and stimulus. In 1929-32, Hoover's government did comparatively little. This difference largely explains why 2008 produced a deep recession but not a depression.</div>
+    </div>
+    <div class="disc-q">
+      <strong>4. Why did the Smoot-Hawley Tariff make the Depression worse rather than better?</strong>
+      <div class="sample-answer">Smoot-Hawley raised tariffs on over 20,000 imported goods, aiming to protect American industries. But other countries retaliated with their own tariffs, collapsing international trade by 66% between 1929 and 1934. American exporters (especially farmers) lost their overseas markets. The tariff turned a domestic crisis into a global one.</div>
+    </div>
+    <div class="disc-q">
+      <strong>5. What is the strongest argument that the crash was inevitable? What is the strongest argument that it could have been prevented?</strong>
+      <div class="sample-answer">Inevitable: speculative bubbles have occurred throughout history and always burst. When stock prices are 10x higher than justified by actual company earnings, a correction is mathematically certain. Preventable: the Fed could have raised margin requirements gradually starting in 1927, forcing investors to put up more cash. This would have cooled speculation without crashing the market. The bubble could have deflated rather than popped.</div>
+    </div>
+    <div class="disc-q">
+      <strong>6. What lesson from 1929 do you think is most relevant to your generation's financial decisions?</strong>
+      <div class="sample-answer">Open-ended, but strong answers might reference: the dangers of investing borrowed money, the illusion that prices always go up, herd mentality in investment (today: crypto, meme stocks), the importance of diversification, or the role of regulation in protecting ordinary people from financial system failures.</div>
+    </div>
+  </div>
+
+  <div class="teacher-section">
+    <h3>Pacing Guide</h3>
+    <div class="teacher-card">
+      <h4>3-Day Plan</h4>
+      <p><strong>Day 1 (50 min):</strong> Introduction with Dow Jones chart discussion (10 min). Students work Stations 1-2 in pairs (30 min). Share findings and margin buying math exercise (10 min).</p>
+      <p><strong>Day 2 (50 min):</strong> Quick review of Day 1 findings (5 min). Students work Stations 3-4 (30 min). Class discussion on crash timeline and human impact (15 min).</p>
+      <p><strong>Day 3 (50 min):</strong> Station 5 on reforms (15 min). 2008 comparison mini-lesson (10 min). Final argument builder (15 min). Share and discuss theses (10 min).</p>
+      <h4 style="margin-top:14px;">1-Day Condensed (90 min block)</h4>
+      <p>Chart intro (10 min). Jigsaw all 5 stations (30 min). Expert group presentations (20 min). 2008 connection discussion (10 min). Argument builder (15 min). Share out (5 min).</p>
+    </div>
+  </div>
+
+  <div class="teacher-section">
+    <h3>Differentiation</h3>
+    <div class="teacher-card">
+      <p><strong>Struggling learners:</strong> Pre-teach margin buying with a concrete example (buying a $100 item with $10 down). Focus on Stations 1 and 3 (most narrative, least abstract). Provide sentence starters for the argument builder.</p>
+      <p style="margin-top:8px;"><strong>Advanced learners:</strong> Have them research the Pecora Commission hearings of 1933 and write a brief on what investigators found. Challenge them to evaluate whether Glass-Steagall's 1999 repeal contributed to the 2008 crisis.</p>
+      <p style="margin-top:8px;"><strong>ELL students:</strong> Pre-teach vocabulary with visuals. The Dow Jones chart and station artifacts provide visual scaffolding. Pair with a partner for the argument builder.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ==================== TAB 3: QUIZ ==================== -->
+<div id="tab-quiz" class="tab-content">
+<div class="quiz-tab">
+  <h2>1929 Crash Assessment</h2>
+  <div id="quizContainer"></div>
+  <div class="quiz-controls">
+    <button class="quiz-submit" onclick="gradeQuiz()">Submit Quiz</button>
+  </div>
+  <div class="quiz-score" id="quizScore"></div>
+</div>
+</div>
+
+<!-- ==================== TAB 4: PRINT WORKSHEET ==================== -->
+<div id="tab-print" class="tab-content">
+<div class="print-tab">
+  <button class="print-btn no-print" onclick="printWorksheet()">Print Worksheet</button>
+  <h2>1929 Stock Market Crash - Student Worksheet</h2>
+  <p style="text-align:center;color:#555;margin-bottom:20px;">Name: _________________________ Date: _____________ Period: _______</p>
+
+  <div class="ws-section">
+    <h3>Part A: Vocabulary Matching (16 points)</h3>
+    <p>Match each term with its correct definition.</p>
+    <div class="vocab-grid">
+      <div class="vocab-term">1. Margin buying</div>
+      <div class="vocab-def">A. A general decline in prices, economic activity, and employment lasting months or years</div>
+      <div class="vocab-term">2. Speculation</div>
+      <div class="vocab-def">B. Government agency created in 1934 to regulate the stock market</div>
+      <div class="vocab-term">3. Bubble</div>
+      <div class="vocab-def">C. Purchasing stocks with borrowed money, putting down only a fraction of the price</div>
+      <div class="vocab-term">4. Liquidity</div>
+      <div class="vocab-def">D. When depositors rush to withdraw money from a bank, causing it to fail</div>
+      <div class="vocab-term">5. Bank run</div>
+      <div class="vocab-def">E. Insurance program created in 1933 to protect bank deposits up to a set amount</div>
+      <div class="vocab-term">6. Recession</div>
+      <div class="vocab-def">F. The central banking system that controls money supply and interest rates</div>
+      <div class="vocab-term">7. Federal Reserve</div>
+      <div class="vocab-def">G. Buying assets not for their value but because you expect the price to keep rising</div>
+      <div class="vocab-term">8. SEC</div>
+      <div class="vocab-def">H. A situation where asset prices rise far above their actual value, driven by herd behavior</div>
+      <div class="vocab-term">9. FDIC</div>
+      <div class="vocab-def">I. How easily an asset can be converted to cash</div>
+      <div class="vocab-term">10. Depression</div>
+      <div class="vocab-def">J. A temporary economic decline, typically defined as two consecutive quarters of falling GDP</div>
+    </div>
+  </div>
+
+  <div class="ws-section">
+    <h3>Part B: Crash Timeline (16 points)</h3>
+    <p>Fill in the missing events for each date during the October 1929 crash.</p>
+    <div class="ws-question">
+      <p><strong>September 5, 1929:</strong></p>
+      <div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>Thursday, October 24 (Black Thursday):</strong></p>
+      <div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>What did the bankers do on Black Thursday to stop the panic?</strong></p>
+      <div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>Monday, October 28 (Black Monday):</strong></p>
+      <div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>Tuesday, October 29 (Black Tuesday):</strong></p>
+      <div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>How much money was lost on Black Tuesday alone?</strong></p>
+      <div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>How many shares were traded on Black Tuesday?</strong></p>
+      <div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>By 1932, what had happened to the Dow Jones average compared to its 1929 peak?</strong></p>
+      <div class="ws-line"></div>
+    </div>
+  </div>
+
+  <div class="ws-section">
+    <h3>Part C: Cause and Effect Chain (16 points)</h3>
+    <p>Complete the chain showing how the crash led to the Depression. Fill in each blank.</p>
+    <div class="ws-question">
+      <p>1. Stock prices crash -> Investors who bought on margin receive __________ from their brokers.</p>
+    </div>
+    <div class="ws-question">
+      <p>2. Margin calls force investors to __________ their stocks at huge losses.</p>
+    </div>
+    <div class="ws-question">
+      <p>3. Mass selling drives prices even __________, creating a vicious cycle.</p>
+    </div>
+    <div class="ws-question">
+      <p>4. Banks that invested depositors' money in stocks begin to __________.</p>
+    </div>
+    <div class="ws-question">
+      <p>5. Frightened depositors rush to withdraw their savings, causing __________.</p>
+    </div>
+    <div class="ws-question">
+      <p>6. With banks failing, businesses cannot get __________ to operate.</p>
+    </div>
+    <div class="ws-question">
+      <p>7. Businesses cut production and lay off workers, pushing unemployment to __________.</p>
+    </div>
+    <div class="ws-question">
+      <p>8. The __________ Tariff collapses international trade, spreading the crisis globally.</p>
+    </div>
+  </div>
+
+  <div class="ws-section">
+    <h3>Part D: Primary Source Analysis (12 points)</h3>
+    <p>Read the following quote from President Herbert Hoover, March 1930:</p>
+    <div class="source-block" style="margin:12px 0;">"The fundamental business of the country, that is, production and distribution of commodities, is on a sound and prosperous basis... We have now passed the worst."</div>
+    <div class="ws-question">
+      <p><strong>1. What was Hoover's main message to the American public? (3 pts)</strong></p>
+      <div class="ws-line"></div><div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>2. Was Hoover correct? What actually happened after March 1930? (3 pts)</strong></p>
+      <div class="ws-line"></div><div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>3. Why might a president say something overly optimistic during an economic crisis? What are the risks of doing so? (3 pts)</strong></p>
+      <div class="ws-line"></div><div class="ws-line"></div>
+    </div>
+    <div class="ws-question">
+      <p><strong>4. How does Hoover's statement compare to how leaders communicated during the 2008 financial crisis? (3 pts)</strong></p>
+      <div class="ws-line"></div><div class="ws-line"></div>
+    </div>
+  </div>
+
+  <div class="ws-section">
+    <h3>Part E: Reflection (10 points)</h3>
+    <div class="ws-question">
+      <p><strong>Imagine you are a young worker in 1928 with $500 in savings. A coworker tells you about a "sure thing" stock and offers to show you how to buy on margin. Based on what you have learned, what would you do? Explain your reasoning using at least two concepts from this investigation.</strong></p>
+      <div class="ws-line"></div><div class="ws-line"></div><div class="ws-line"></div><div class="ws-line"></div><div class="ws-line"></div>
+    </div>
+  </div>
+
+  <div class="ws-answer-key">
+    <h3>Answer Key (70 points total)</h3>
+    <h4>Part A: Vocabulary Matching (16 pts - 1.6 pts each)</h4>
+    <ol>
+      <li>C (Margin buying - purchasing with borrowed money)</li>
+      <li>G (Speculation - buying for expected price increase)</li>
+      <li>H (Bubble - prices far above actual value)</li>
+      <li>I (Liquidity - ease of converting to cash)</li>
+      <li>D (Bank run - depositors rushing to withdraw)</li>
+      <li>J (Recession - temporary economic decline)</li>
+      <li>F (Federal Reserve - central banking system)</li>
+      <li>B (SEC - created 1934 to regulate stock market)</li>
+      <li>E (FDIC - deposit insurance created 1933)</li>
+      <li>A (Depression - prolonged economic decline)</li>
+    </ol>
+    <h4>Part B: Crash Timeline (16 pts - 2 pts each)</h4>
+    <ol>
+      <li>Roger Babson warned "a crash is coming" at a luncheon speech; market dropped sharply that day</li>
+      <li>Panic selling began; nearly 13 million shares traded; stock ticker fell hours behind</li>
+      <li>Five major bankers pooled money and had Richard Whitney place large buy orders to restore confidence</li>
+      <li>Dow fell 13% in one day; the bankers' pool did not intervene again; confidence collapsed</li>
+      <li>Total panic; 16.4 million shares traded; prices collapsed across the board</li>
+      <li>Approximately $14 billion lost in a single day</li>
+      <li>16.4 million shares (a record that stood for decades)</li>
+      <li>The Dow had fallen roughly 89% from its September 1929 peak of 381 to about 41 in July 1932</li>
+    </ol>
+    <h4>Part C: Cause and Effect Chain (16 pts - 2 pts each)</h4>
+    <ol>
+      <li>margin calls</li>
+      <li>sell</li>
+      <li>lower</li>
+      <li>fail</li>
+      <li>bank runs</li>
+      <li>loans / credit</li>
+      <li>25%</li>
+      <li>Smoot-Hawley</li>
+    </ol>
+    <h4>Part D: Primary Source Analysis (12 pts - 3 pts each)</h4>
+    <ol>
+      <li>Hoover reassured Americans that the economy was fundamentally healthy and the worst of the crisis was over.</li>
+      <li>No. Unemployment continued to rise, banks kept failing, and the Depression deepened for two more years. The worst was far from over.</li>
+      <li>To maintain public confidence and prevent further panic. Risks: if proven wrong, the president loses credibility; people who trusted the message may have made poor financial decisions.</li>
+      <li>In 2008, leaders were more transparent about the severity. President Bush and Treasury Secretary Paulson explicitly warned of systemic collapse to justify the bailout. The 1929 approach of blind optimism was largely abandoned.</li>
+    </ol>
+    <h4>Part E: Reflection (10 pts)</h4>
+    <p>Strong answers will: decline the offer or invest cautiously (2 pts), reference specific risks of margin buying (3 pts), use a second concept such as speculation, bubbles, or liquidity (3 pts), and show clear reasoning connecting evidence to the decision (2 pts).</p>
+  </div>
+</div>
+</div>
+
+<script>
+// Tab switching
+function switchTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active','print-active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const tab=document.getElementById('tab-'+id);
+  tab.classList.add('active');
+  if(id==='print') tab.classList.add('print-active');
+  event.target.classList.add('active');
+}
+
+// Station data
+const stations=[
+{
+  title:"THE BOOM: The Roaring Twenties Bull Market",
+  sub:"1920-1929: Why did Americans believe stocks would rise forever?",
+  context:"Between 1920 and 1929, the Dow Jones Industrial Average rose from 73 to 381, a gain of over 500%. New industries like automobiles, radio, aviation, and electrical utilities drove genuine economic growth. But financial innovation outpaced regulation, and a dangerous culture of speculation took hold.",
+  artifacts:[
+    {title:"The Margin Machine",content:"By 1929, brokers' loans for stock purchases had reached $8.5 billion. Investors could buy $10,000 worth of stock with just $1,000 cash and $9,000 borrowed from their broker. As long as prices rose, everyone profited. But if prices fell just 10%, the investor's entire investment was wiped out, and the broker demanded immediate repayment (a 'margin call'). By late 1929, margin debt equaled the entire federal budget.",tag:"Economic Data"},
+    {title:"The RCA Story",content:"Radio Corporation of America (RCA) was the 'tech stock' of its era. RCA never paid a dividend, yet its stock soared from $85 per share in early 1928 to $549 by September 1929. Investors bought not because of earnings but because they expected the price to keep rising. RCA's price-to-earnings ratio reached levels that could not be justified by any realistic business projection. By 1932, RCA traded at $2.50.",tag:"Case Study"},
+    {title:"The Shoeshine Boy",content:"A popular (possibly apocryphal) story holds that Joseph P. Kennedy Sr. decided to sell all his stocks after a shoeshine boy gave him stock tips. Kennedy reasoned: 'When shoeshine boys are giving stock tips, it is time to get out.' Whether or not the story is literally true, it captured a real phenomenon. By 1929, stock speculation had spread from Wall Street professionals to taxi drivers, barbers, and factory workers across the country.",tag:"Cultural Evidence"}
+  ],
+  question:"Why is margin buying especially dangerous during a bubble? Use the RCA example to explain what happens when a margin-bought stock loses value."
+},
+{
+  title:"THE WARNING SIGNS: Cracks Beneath the Surface",
+  sub:"What did economists see that investors chose to ignore?",
+  context:"While urban America celebrated the Roaring Twenties, the economy had deep structural weaknesses. The prosperity was real but unevenly distributed, and several warning signals flashed red throughout the decade.",
+  artifacts:[
+    {title:"The Forgotten Farm Crisis",content:"American agriculture was in depression throughout the entire 1920s. Wartime demand had encouraged farmers to expand and take on debt. When European agriculture recovered after WWI, crop prices collapsed. Farm income fell from $22 billion in 1919 to $13 billion by 1929. Banks in rural areas failed steadily throughout the decade. Meanwhile, the top 1% of Americans owned approximately 40% of the nation's wealth.",tag:"Economic Data"},
+    {title:"Roger Babson's Warning",content:"On September 5, 1929, economist Roger Babson told a business luncheon: 'Sooner or later a crash is coming, and it may be terrific.' The market dropped sharply that day (the 'Babson Break'). But within days, prominent figures like Irving Fisher of Yale responded: 'Stock prices have reached what looks like a permanently high plateau.' The market recovered, and Babson was dismissed as a pessimist. He was vindicated 49 days later.",tag:"Primary Source"},
+    {title:"Federal Reserve Tightening",content:"In 1928-29, the Federal Reserve raised interest rates to discourage stock speculation. The policy created a painful dilemma: higher rates did slow some speculation, but they also squeezed legitimate businesses that needed credit. Some historians argue the rate hikes triggered the very crash they were trying to prevent. Others argue the Fed acted too late. By 1929, the speculative mania had its own momentum.",tag:"Policy Analysis"}
+  ],
+  question:"Why did most investors ignore the warning signs? Consider both the economic data (farm crisis, inequality) and the psychological factors (Babson vs. Fisher debate)."
+},
+{
+  title:"THE CRASH: Five Days That Shattered Wall Street",
+  sub:"October 24-29, 1929: The end of an era",
+  context:"The crash did not happen in a single day. It unfolded over five terrifying days, punctuated by a failed rescue attempt and mounting human desperation.",
+  artifacts:[
+    {title:"Black Thursday, October 24",content:"The morning opened with heavy selling. By 11:00 AM, the market was in freefall. The stock ticker fell so far behind that traders had no idea what their stocks were actually worth. In a dramatic move, five of the nation's most powerful bankers met at the offices of J.P. Morgan & Co. They pooled their resources and sent Richard Whitney, vice president of the Stock Exchange, onto the trading floor to place large buy orders. The gesture temporarily halted the panic. The market stabilized. Headlines declared the crisis over.",tag:"Day-by-Day"},
+    {title:"Black Monday and Black Tuesday, October 28-29",content:"Over the weekend, investors outside New York finally received their margin calls. On Monday, the Dow fell 13% with no banker rescue. On Tuesday, October 29, total panic struck. 16.4 million shares were traded in a single day. $14 billion in value was destroyed. The ticker ran four hours behind. Brokers wept on the trading floor. Outside the Exchange, crowds gathered in eerie silence. By the end of the week, $30 billion had vanished, roughly equal to the entire cost of World War I for the United States.",tag:"Day-by-Day"},
+    {title:"The Human Cost",content:"Margin calls destroyed small investors overnight. A worker who had invested $1,000 of savings and borrowed $9,000 on margin now owed thousands more than their stocks were worth. Stories of financial ruin spread rapidly. While the popular image of investors jumping from windows is largely myth (suicide rates did rise, but gradually), the psychological devastation was real. One observer noted that Wall Street was 'like a dead city' in the days after the crash.",tag:"Human Impact"}
+  ],
+  question:"Why did the bankers' rescue attempt on Black Thursday ultimately fail? What does this reveal about the limits of confidence in stopping a financial panic?"
+},
+{
+  title:"THE CONTAGION: From Wall Street to Main Street",
+  sub:"How a stock market crash became the Great Depression",
+  context:"The crash itself destroyed wealth on paper. But the Depression that followed destroyed real lives, real businesses, and real communities. The crash was not the sole cause of the Depression. Rather, it triggered a cascade of failures in an already fragile system.",
+  artifacts:[
+    {title:"The Banking Collapse",content:"Between 1930 and 1933, approximately 9,000 American banks failed. Banks had invested depositors' money in the stock market. When stocks crashed, banks could not cover withdrawals. With no FDIC insurance, depositors lost everything. Each bank failure wiped out the savings of thousands of families and eliminated credit for local businesses. The money supply contracted by roughly one-third. The Federal Reserve, which had the power to intervene, largely stood by and watched.",tag:"Economic Data"},
+    {title:"The Downward Spiral",content:"GDP fell nearly 50% between 1929 and 1933. Unemployment reached 25% nationally and exceeded 50% in some industrial cities. Wages for those still employed fell 42%. International trade collapsed by 66% after the Smoot-Hawley Tariff of 1930 triggered retaliatory tariffs worldwide. Industrial production fell to 1913 levels. By 1933, the American economy had regressed nearly two decades.",tag:"Statistics"},
+    {title:"The Fed's Fatal Inaction",content:"Economists Milton Friedman and Anna Schwartz argued in 1963 that the Federal Reserve's failure to expand the money supply was the single most important cause of the Depression's severity. The Fed had the tools to rescue failing banks, inject liquidity, and prevent the money supply from collapsing. It chose not to, partly from ideology (belief that the market should 'purge' its excesses) and partly from institutional paralysis. Ben Bernanke, before becoming Fed chairman in 2006, called this 'the most tragic failure of U.S. economic policy in the twentieth century.'",tag:"Historical Analysis"}
+  ],
+  question:"The crash destroyed stock market wealth. Explain the chain of events that turned that into 25% unemployment and 50% GDP decline. Why was the Federal Reserve's inaction so consequential?"
+},
+{
+  title:"THE LESSONS: Reforms and Echoes",
+  sub:"What changed after the crash, and what stayed the same",
+  context:"The devastation of the Depression produced fundamental reforms in American financial regulation. Many of these protections endured for decades. Understanding what was built in response reveals what was missing before.",
+  artifacts:[
+    {title:"The New Deal Financial Reforms",content:"The Securities and Exchange Commission (SEC), created in 1934, required companies to disclose financial information and banned insider trading. The FDIC (1933) insured bank deposits, ending the incentive for bank runs. The Glass-Steagall Act (1933) separated commercial banking from investment banking, preventing banks from gambling with depositors' money. Margin requirements were raised from 10% to 50%. Social Security (1935) created a safety net. These reforms stabilized the financial system for over 60 years.",tag:"Policy"},
+    {title:"The 2008 Echo",content:"In 1999, Glass-Steagall was repealed, allowing banks to combine commercial and investment banking again. Within a decade, banks were making risky bets with depositor-backed money, this time in mortgage-backed securities instead of stocks. When housing prices fell in 2007-08, the result was strikingly familiar: overleveraged institutions collapsing, credit freezing, and a financial crisis spreading to the real economy. The difference: in 2008, the government intervened with bailouts and stimulus. The result was a severe recession, not a depression.",tag:"Modern Parallel"},
+    {title:"Margin Regulations Today",content:"After 1929, the Federal Reserve set minimum margin requirements at 50%, meaning investors must put up at least half the purchase price in cash. This dramatically reduced the leverage that made the 1929 crash so devastating. However, new forms of leverage have emerged: options trading, derivatives, and cryptocurrency margin accounts sometimes allow leverage ratios similar to 1920s levels, raising questions about whether the lessons of 1929 have been fully internalized.",tag:"Modern Relevance"}
+  ],
+  question:"Which New Deal reform do you think was most important for preventing another 1929-style crash? Do you think the 2008 crisis shows that the lessons of 1929 were forgotten?"
+}
+];
+
+let currentStation=-1, evidenceLogged=[false,false,false,false,false];
+
+function openStation(idx){
+  currentStation=idx;
+  const s=stations[idx];
+  document.getElementById('modalTitle').textContent=s.title;
+  document.getElementById('modalSub').textContent=s.sub;
+  document.getElementById('modalContext').textContent=s.context;
+  document.getElementById('modalQuestion').textContent=s.question;
+  document.getElementById('modalAnswer').value='';
+  let html='';
+  s.artifacts.forEach(a=>{
+    html+=`<div class="artifact"><h4>${a.title}</h4><div class="artifact-content">${a.content}</div><span class="source-tag">${a.tag}</span></div>`;
+  });
+  document.getElementById('modalArtifacts').innerHTML=html;
+  document.getElementById('stationModal').classList.add('active');
+}
+function closeModal(){document.getElementById('stationModal').classList.remove('active');}
+function logEvidence(){
+  if(currentStation<0)return;
+  const ans=document.getElementById('modalAnswer').value.trim();
+  if(!ans){alert('Write your analysis before logging evidence.');return;}
+  evidenceLogged[currentStation]=true;
+  const el=document.getElementById('ev'+currentStation);
+  el.classList.add('collected');
+  el.textContent='Station '+(currentStation+1)+': '+stations[currentStation].title.split(':')[0]+' - Evidence collected';
+  document.getElementById('evidenceCount').textContent=evidenceLogged.filter(Boolean).length;
+  closeModal();
+}
+function selectThesis(el){
+  document.querySelectorAll('.thesis-opt').forEach(t=>t.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// Dow Jones Chart
+function initChart(){
+  const ctx=document.getElementById('dowChart').getContext('2d');
+  const years=[1920,1921,1922,1923,1924,1925,1926,1927,1928,1929,'Sep 29','Oct 29','Nov 29',1930,1931,1932,1933,1934,1935];
+  const values=[73,64,99,96,120,157,166,200,300,381,381,230,199,164,77,41,60,105,144];
+  new Chart(ctx,{
+    type:'line',
+    data:{labels:years,datasets:[{
+      label:'Dow Jones Industrial Average',
+      data:values,
+      borderColor:function(ctx){return ctx.p0?.parsed?.x>=9?'#c62828':'#2e7d32';},
+      segment:{borderColor:function(ctx){return ctx.p0DataIndex>=9?'#c62828':'#2e7d32';}},
+      backgroundColor:'rgba(46,125,50,0.08)',
+      fill:true,
+      tension:0.3,
+      pointRadius:function(ctx){return[9,10,11].includes(ctx.dataIndex)?6:3;},
+      pointBackgroundColor:function(ctx){return ctx.dataIndex>=9?'#c62828':'#2e7d32';},
+      borderWidth:3
+    }]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title:function(items){return'Year: '+items[0].label;},
+          label:function(item){return'Dow: '+item.raw;}
+        }}
+      },
+      scales:{
+        y:{title:{display:true,text:'Index Value',font:{weight:'bold'}},min:0,max:420,grid:{color:'rgba(0,0,0,0.06)'}},
+        x:{title:{display:true,text:'Year',font:{weight:'bold'}},grid:{display:false}}
+      },
+      annotation:{annotations:{
+        crashLine:{type:'line',xMin:9,xMax:9,borderColor:'rgba(198,40,40,0.4)',borderWidth:2,borderDash:[6,4],label:{content:'Peak: 381',display:true,position:'start'}}
+      }}
+    }
+  });
+}
+
+// Quiz
+const quizData=[
+  {q:"What does 'buying on margin' mean?",opts:["Buying stocks at a discount","Purchasing stocks with borrowed money","Selling stocks before they lose value","Investing only in safe bonds"],ans:1},
+  {q:"By 1929, what percentage of a stock's price could an investor borrow from a broker?",opts:["25%","50%","75%","90%"],ans:3},
+  {q:"Which stock became the symbol of 1920s speculation, rising from $85 to $549?",opts:["General Motors","U.S. Steel","RCA (Radio Corporation of America)","Standard Oil"],ans:2},
+  {q:"Who warned on September 5, 1929 that 'a crash is coming'?",opts:["Herbert Hoover","Roger Babson","Irving Fisher","J.P. Morgan"],ans:1},
+  {q:"What happened on Black Thursday, October 24, 1929?",opts:["The stock market hit its all-time high","Panic selling began but bankers temporarily halted it","President Hoover closed the stock exchange","The FDIC was created"],ans:1},
+  {q:"Who did the bankers send to the trading floor to place buy orders on Black Thursday?",opts:["Jesse Livermore","Herbert Hoover","Richard Whitney","John D. Rockefeller"],ans:2},
+  {q:"How much money was lost on Black Tuesday alone?",opts:["$1 billion","$5 billion","$14 billion","$50 billion"],ans:2},
+  {q:"Approximately how many American banks failed between 1930 and 1933?",opts:["500","2,000","5,000","9,000"],ans:3},
+  {q:"By what percentage did the U.S. money supply contract during the Depression?",opts:["10%","About one-third","50%","75%"],ans:1},
+  {q:"What was the peak unemployment rate during the Great Depression?",opts:["10%","15%","20%","25%"],ans:3},
+  {q:"What tariff worsened the Depression by collapsing international trade?",opts:["Fordney-McCumber Tariff","Smoot-Hawley Tariff","Revenue Act","Trade Expansion Act"],ans:1},
+  {q:"What did the FDIC, created in 1933, do?",opts:["Regulated the stock market","Insured bank deposits","Set margin requirements","Created public works jobs"],ans:1},
+  {q:"What did the Glass-Steagall Act of 1933 do?",opts:["Created Social Security","Separated commercial and investment banking","Established the SEC","Raised income taxes"],ans:1},
+  {q:"Which economists argued that the Federal Reserve's inaction was the primary cause of the Depression's severity?",opts:["Keynes and Hayek","Babson and Fisher","Friedman and Schwartz","Marx and Smith"],ans:2},
+  {q:"How does the 2008 crisis mirror 1929?",opts:["Both involved speculative bubbles built on borrowed money","Both were caused by government overspending","Both started in the agricultural sector","Both were limited to the United States"],ans:0},
+  {q:"What was the key difference in the government response between 1929 and 2008?",opts:["In 2008, the government did nothing","In 1929, the government intervened aggressively","In 2008, the government intervened with bailouts and stimulus","In 1929, the Fed expanded the money supply"],ans:2}
+];
+
+function buildQuiz(){
+  let html='';
+  quizData.forEach((q,i)=>{
+    html+=`<div class="quiz-q" id="qq${i}"><div class="q-text"><span class="q-num">${i+1}</span>${q.q}</div>`;
+    q.opts.forEach((o,j)=>{
+      html+=`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`;
+    });
+    html+=`<div class="feedback" id="fb${i}"></div></div>`;
+  });
+  document.getElementById('quizContainer').innerHTML=html;
+}
+
+function gradeQuiz(){
+  let score=0;
+  quizData.forEach((q,i)=>{
+    const sel=document.querySelector(`input[name="q${i}"]:checked`);
+    const fb=document.getElementById('fb'+i);
+    if(sel&&parseInt(sel.value)===q.ans){
+      score++;fb.className='feedback correct';fb.textContent='Correct!';
+    } else {
+      fb.className='feedback incorrect';fb.textContent='Incorrect. The answer is: '+q.opts[q.ans];
+    }
+  });
+  const scoreEl=document.getElementById('quizScore');
+  scoreEl.style.display='block';
+  scoreEl.textContent=`Score: ${score}/${quizData.length} (${Math.round(score/quizData.length*100)}%)`;
+}
+
+function printWorksheet(){
+  document.querySelectorAll('.tab-content').forEach(t=>{t.classList.remove('active');t.classList.remove('print-active');});
+  document.getElementById('tab-print').classList.add('active','print-active');
+  setTimeout(()=>window.print(),200);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded',()=>{initChart();buildQuiz();});
+</script>
+</body>
+</html>

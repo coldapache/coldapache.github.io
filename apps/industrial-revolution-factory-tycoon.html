@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Industrial Revolution Factory Tycoon (1820-1850)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --soot:#1d1a16;
+  --brick:#7a3327;
+  --brass:#b08a3e;
+  --paper:#f1e7d2;
+  --paper-edge:#c9b88f;
+  --ink:#2a221a;
+  --good:#3a7a3a;
+  --bad:#9c2a1c;
+  --warn:#b07a1a;
+}
+*{box-sizing:border-box}
+body{
+  font-family:'Lora',Georgia,serif;
+  color:var(--ink);
+  background:
+    repeating-linear-gradient(0deg,rgba(0,0,0,.03) 0,rgba(0,0,0,.03) 1px,transparent 1px,transparent 4px),
+    radial-gradient(circle at 30% 20%,#e9dcbd 0%,#d6c69e 60%,#b89c6c 100%);
+  min-height:100vh;
+  margin:0;
+}
+h1,h2,h3,h4,h5,.font-serif{font-family:'Cinzel',serif;letter-spacing:.04em}
+.navbar{background:var(--soot);box-shadow:0 4px 0 var(--brass)}
+.navbar .navbar-brand{font-family:'Cinzel',serif;color:var(--paper);font-weight:700;letter-spacing:.08em}
+.navbar .navbar-brand .brass{color:var(--brass)}
+.year-pill{background:var(--brass);color:var(--soot);padding:.3rem .9rem;border-radius:0;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.1em;border:1px solid var(--soot)}
+.nav-tabs{border-bottom:2px solid var(--soot);margin-bottom:1rem}
+.nav-tabs .nav-link{color:var(--soot);font-weight:600;border:none;border-bottom:3px solid transparent;font-family:'Cinzel',serif;font-size:.82rem;letter-spacing:.05em}
+.nav-tabs .nav-link.active{color:var(--brick);border-bottom-color:var(--brick);background:transparent}
+.card{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:0;
+  box-shadow:2px 3px 0 rgba(0,0,0,.18);
+  margin-bottom:1rem;
+}
+.card-header{
+  background:var(--soot);
+  color:var(--paper);
+  border-radius:0!important;
+  border:none;
+  font-family:'Cinzel',serif;
+  letter-spacing:.06em;
+  font-size:.92rem;
+  padding:.6rem 1rem;
+}
+.card-header.brick{background:var(--brick)}
+.card-header.brass{background:var(--brass);color:var(--soot)}
+.btn-mill{
+  background:var(--brick);color:var(--paper);border:none;border-radius:0;
+  font-family:'Cinzel',serif;letter-spacing:.05em;padding:.4rem 1rem;font-size:.85rem;
+}
+.btn-mill:hover{background:var(--soot);color:var(--paper)}
+.btn-mill:disabled{background:#999;color:#eee}
+.btn-brass{background:var(--brass);color:var(--soot);border:none;border-radius:0;font-family:'Cinzel',serif;letter-spacing:.05em;padding:.4rem 1rem;font-size:.85rem}
+.btn-brass:hover{background:var(--soot);color:var(--brass)}
+.kpi{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  padding:.6rem .8rem;
+  text-align:center;
+  margin-bottom:.6rem;
+  position:relative;
+}
+.kpi .kpi-num{font-family:'Cinzel',serif;font-weight:700;font-size:1.4rem;color:var(--soot);line-height:1}
+.kpi .kpi-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:#6b5d44;margin-top:.2rem}
+.kpi.flag{border-left:5px solid var(--brick)}
+.kpi.good{border-left:5px solid var(--good)}
+.kpi.warn{border-left:5px solid var(--warn)}
+.bar{height:10px;background:#d6c69e;position:relative;border:1px solid #a08e62}
+.bar > span{display:block;height:100%}
+.bar .b-good{background:var(--good)}
+.bar .b-warn{background:var(--warn)}
+.bar .b-bad{background:var(--bad)}
+.event{
+  border-left:4px solid var(--brick);
+  padding:.5rem .8rem;
+  background:rgba(255,255,255,.4);
+  margin-bottom:.5rem;
+  font-size:.92rem;
+}
+.event.law{border-left-color:var(--brass);background:rgba(176,138,62,.12)}
+.event.crisis{border-left-color:var(--bad);background:rgba(156,42,28,.08)}
+.event.good{border-left-color:var(--good);background:rgba(58,122,58,.08)}
+.event.choice{border-left-color:var(--soot);background:rgba(29,26,22,.06)}
+.event .ev-year{font-family:'Cinzel',serif;font-weight:700;color:var(--brick);margin-right:.6rem}
+.choice-box{border:2px solid var(--brick);padding:1rem;background:rgba(255,255,255,.6);margin-bottom:1rem}
+.choice-btn{
+  display:block;width:100%;text-align:left;padding:.7rem 1rem;margin-bottom:.5rem;
+  background:var(--paper);border:2px solid var(--soot);font-family:'Lora',serif;font-size:.95rem;
+  cursor:pointer;border-radius:0;
+}
+.choice-btn:hover{background:var(--brass);color:var(--soot)}
+.modal-paper .modal-content{background:var(--paper);border:2px solid var(--soot);border-radius:0}
+.modal-paper .modal-header{background:var(--soot);color:var(--paper);border-radius:0;border:none}
+.modal-paper .modal-title{font-family:'Cinzel',serif;letter-spacing:.05em}
+.legal-stamp{
+  display:inline-block;border:2px solid var(--bad);color:var(--bad);
+  padding:.2rem .6rem;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.15em;
+  transform:rotate(-3deg);text-transform:uppercase;
+}
+.legal-stamp.clean{border-color:var(--good);color:var(--good)}
+.dial{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.dial label{flex:0 0 7rem;font-size:.85rem;font-weight:600}
+.dial input[type=range]{flex:1}
+.dial .val{flex:0 0 4rem;text-align:right;font-family:'Cinzel',serif;font-weight:700}
+.smoke{
+  background:linear-gradient(180deg,#594c3a 0%,#1d1a16 100%);
+  color:#e9dcbd;padding:1rem;font-family:'Cinzel',serif;letter-spacing:.06em;text-align:center;
+}
+table.ledger{width:100%;font-size:.88rem;border-collapse:collapse}
+table.ledger th{background:var(--soot);color:var(--paper);padding:.4rem .6rem;text-align:left;font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em}
+table.ledger td{padding:.35rem .6rem;border-bottom:1px solid var(--paper-edge)}
+table.ledger tr:nth-child(even) td{background:rgba(0,0,0,.03)}
+.scroll-log{max-height:340px;overflow-y:auto;border:1px solid var(--paper-edge);padding:.5rem;background:#fbf3df}
+.lock{filter:grayscale(.6) opacity(.55);pointer-events:none}
+.ending-screen{
+  min-height:80vh;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  background:radial-gradient(circle at center,#3a312a 0%,#1d1a16 100%);color:var(--paper);
+  padding:2rem;text-align:center;border:4px solid var(--brass);
+}
+.ending-screen h1{color:var(--brass);font-size:2.4rem;margin-bottom:1rem}
+.ending-screen .verdict{font-family:'Cinzel',serif;font-size:1.2rem;line-height:1.6;max-width:46rem}
+.ending-screen .stats{margin-top:1.5rem;background:rgba(0,0,0,.4);padding:1rem;border:1px solid var(--brass);max-width:46rem;width:100%}
+.ending-screen .stats td{padding:.3rem .8rem;border-bottom:1px dotted #555;color:var(--paper)}
+.ending-screen .stats th{color:var(--brass);text-align:left;padding:.3rem .8rem;border-bottom:1px solid var(--brass)}
+.intro{
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 20 L40 20 M20 0 L20 40' stroke='%23000' stroke-opacity='0.04'/%3E%3C/svg%3E"),var(--paper);
+  border:1px solid var(--paper-edge);padding:1.5rem;
+}
+.muted-small{font-size:.78rem;color:#6b5d44}
+.law-card{border:1px dashed var(--brass);padding:.6rem .8rem;margin-bottom:.5rem;background:rgba(176,138,62,.08)}
+.law-card .law-yr{font-family:'Cinzel',serif;font-weight:700;color:var(--brick)}
+.law-card.broken{border-color:var(--bad);background:rgba(156,42,28,.08)}
+@media(max-width:768px){.kpi .kpi-num{font-size:1.1rem}}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg px-3">
+  <span class="navbar-brand mb-0 h1"><i class="fas fa-industry me-2 brass"></i>Industrial Revolution <span class="brass">Factory Tycoon</span></span>
+  <span class="ms-auto year-pill" id="yearPill">YEAR 1820</span>
+</nav>
+
+<div class="container-fluid px-3 py-3">
+
+<ul class="nav nav-tabs" id="mainTabs">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#mill"><i class="fas fa-cogs me-1"></i>The Mill</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#workforce"><i class="fas fa-users me-1"></i>Workforce</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#capital"><i class="fas fa-coins me-1"></i>Capital</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#laws"><i class="fas fa-gavel me-1"></i>Laws &amp; Reform</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#log"><i class="fas fa-scroll me-1"></i>Mill Ledger</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#teacher"><i class="fas fa-chalkboard-teacher me-1"></i>Teacher</a></li>
+</ul>
+
+<div class="tab-content">
+
+<!-- ============ MILL OVERVIEW ============ -->
+<div class="tab-pane fade show active" id="mill">
+
+<div class="row g-3">
+<div class="col-lg-8">
+
+<div class="intro" id="introBox">
+  <h3 class="mb-2">Northbridge Cotton Mill, Lancashire</h3>
+  <p class="mb-2">You are the new owner of a small textile mill in 1820. Steam power is replacing handlooms. Cotton from American plantations and Indian looms feeds an exploding global market. You inherited the mill and <strong>&pound;5,000</strong> in working capital. Your goal: survive thirty years of boom, depression, riots, and reform, and judge how you wish to be remembered.</p>
+  <p class="mb-2"><strong>How to play.</strong> Each turn is one year. Use the <em>Workforce</em>, <em>Capital</em>, and <em>Laws</em> tabs to make decisions. When you are ready, press <strong>End the Year</strong>. The mill will produce, sell, and react. New laws will arrive on the calendar and bind you whether you like them or not.</p>
+  <p class="muted-small mb-0">Period money is in pounds (&pound;). 1 pound is roughly two weeks of skilled adult wages in 1820.</p>
+</div>
+
+<div class="card mt-3">
+<div class="card-header brick"><i class="fas fa-smog me-2"></i>This Season at the Mill</div>
+<div class="card-body" id="seasonBody">
+  <p class="mb-2" id="seasonNarrative">The boilers are cold. Open the workforce ledger and decide your wages and hours, then press End the Year to fire the mill.</p>
+  <div class="row g-2 mt-2" id="quickStats"></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><i class="fas fa-bell me-2"></i>Pending Decisions</div>
+<div class="card-body" id="pendingBox">
+  <p class="text-muted mb-0" id="pendingEmpty">No decisions pending. Advance the year when ready.</p>
+</div>
+</div>
+
+</div>
+
+<div class="col-lg-4">
+
+<div class="card">
+<div class="card-header brass"><i class="fas fa-chart-line me-2"></i>Standing</div>
+<div class="card-body p-2" id="kpiPanel"></div>
+</div>
+
+<div class="card">
+<div class="card-header"><i class="fas fa-hourglass-half me-2"></i>Turn</div>
+<div class="card-body text-center">
+  <button class="btn-mill" style="font-size:1rem;padding:.7rem 1.4rem" id="endYearBtn" onclick="endYear()"><i class="fas fa-play me-1"></i>End the Year</button>
+  <div class="muted-small mt-2" id="turnNote">Each turn advances 1 year. 30 turns total (1820 - 1850).</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><i class="fas fa-redo me-2"></i>Restart</div>
+<div class="card-body">
+  <button class="btn btn-outline-dark btn-sm w-100" onclick="restartGame()"><i class="fas fa-undo me-1"></i>New Game</button>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ============ WORKFORCE ============ -->
+<div class="tab-pane fade" id="workforce">
+<div class="row g-3">
+<div class="col-lg-7">
+
+<div class="card">
+<div class="card-header brick"><i class="fas fa-users me-2"></i>Hire &amp; Fire</div>
+<div class="card-body">
+
+<div class="row text-center mb-2">
+  <div class="col"><div class="kpi"><div class="kpi-num" id="wAdult">20</div><div class="kpi-lbl">Adult Workers</div></div></div>
+  <div class="col"><div class="kpi flag"><div class="kpi-num" id="wChild">0</div><div class="kpi-lbl">Child Workers</div></div></div>
+  <div class="col"><div class="kpi"><div class="kpi-num" id="wYoung">0</div><div class="kpi-lbl">Aged 9-13</div></div></div>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <button class="btn-mill" onclick="hireAdult(1)"><i class="fas fa-plus me-1"></i>Hire Adult (&pound;5)</button>
+  <button class="btn-mill" onclick="hireAdult(5)">+5 Adults (&pound;25)</button>
+  <button class="btn-mill" onclick="hireChild(1)" id="hireChildBtn"><i class="fas fa-child me-1"></i>Hire Child (&pound;1)</button>
+  <button class="btn-mill" onclick="hireChild(5)" id="hireChild5Btn">+5 Children (&pound;5)</button>
+</div>
+<div class="d-flex flex-wrap gap-2 mb-2">
+  <button class="btn btn-outline-dark btn-sm" onclick="fireAdult(1)">Fire 1 Adult</button>
+  <button class="btn btn-outline-dark btn-sm" onclick="fireChild(1)">Fire 1 Child</button>
+  <button class="btn btn-outline-dark btn-sm" onclick="fireAdult(5)">Fire 5 Adults</button>
+  <button class="btn btn-outline-dark btn-sm" onclick="fireChild(5)">Fire 5 Children</button>
+</div>
+<p class="muted-small" id="laborLegality">Child labor is legal but harsh. Children work for ~30% of an adult's wage. Reform laws may restrict this in coming decades.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><i class="fas fa-pound-sign me-2"></i>Wages &amp; Hours</div>
+<div class="card-body">
+
+<div class="dial">
+  <label>Adult wage / day</label>
+  <input type="range" id="wageSlider" min="3" max="30" step="1" value="8" oninput="updateDials()">
+  <span class="val"><span id="wageVal">8</span>p</span>
+</div>
+<div class="dial">
+  <label>Hours / day</label>
+  <input type="range" id="hoursSlider" min="8" max="16" step="1" value="12" oninput="updateDials()">
+  <span class="val"><span id="hoursVal">12</span>h</span>
+</div>
+<p class="muted-small" id="wageHint">8 pence per day is typical for 1820. A skilled adult expects shillings and bread, not gold.</p>
+
+</div>
+</div>
+
+</div>
+
+<div class="col-lg-5">
+
+<div class="card">
+<div class="card-header brass"><i class="fas fa-heart me-2"></i>Worker Morale</div>
+<div class="card-body">
+  <div class="d-flex justify-content-between"><span>Morale</span><span id="moraleNum">50%</span></div>
+  <div class="bar mb-3"><span class="b-warn" id="moraleBar" style="width:50%"></span></div>
+  <p class="muted-small mb-1"><strong>Drivers:</strong> wage, hours, housing, ventilation, safety, accidents, age of workforce.</p>
+  <p class="muted-small mb-0"><strong>Risk:</strong> low morale invites strikes and turnover.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><i class="fas fa-eye me-2"></i>Public Reputation</div>
+<div class="card-body">
+  <div class="d-flex justify-content-between"><span>Reputation</span><span id="repNum">50%</span></div>
+  <div class="bar mb-3"><span class="b-warn" id="repBar" style="width:50%"></span></div>
+  <p class="muted-small mb-0">Newspapers, ministers, and reformers track how you treat workers. Low reputation invites scrutiny. High reputation invites investors.</p>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ============ CAPITAL ============ -->
+<div class="tab-pane fade" id="capital">
+<div class="row g-3">
+<div class="col-lg-7">
+
+<div class="card">
+<div class="card-header brick"><i class="fas fa-cog me-2"></i>Machinery &amp; Investments</div>
+<div class="card-body">
+
+<table class="ledger mb-3">
+<thead><tr><th>Asset</th><th>Level</th><th>Effect</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td>Power Looms</td><td id="lvLooms">5</td><td>+output, +risk if no safety</td>
+  <td><button class="btn btn-sm btn-mill" onclick="buy('looms',300)">+1 Loom (&pound;300)</button></td></tr>
+<tr><td>Steam Engine</td><td id="lvEngine">1</td><td>multiplies loom output</td>
+  <td><button class="btn btn-sm btn-mill" onclick="buy('engine',900)">Upgrade Engine (&pound;900)</button></td></tr>
+<tr><td>Safety Guards</td><td id="lvSafety">0</td><td>fewer accidents</td>
+  <td><button class="btn btn-sm btn-mill" onclick="buy('safety',250)">+1 Tier (&pound;250)</button></td></tr>
+<tr><td>Ventilation</td><td id="lvVent">0</td><td>fewer lung deaths, +morale</td>
+  <td><button class="btn btn-sm btn-mill" onclick="buy('vent',200)">+1 Tier (&pound;200)</button></td></tr>
+<tr><td>Worker Housing</td><td id="lvHouse">0</td><td>+morale, +reputation</td>
+  <td><button class="btn btn-sm btn-mill" onclick="buy('house',700)">+1 Tier (&pound;700)</button></td></tr>
+<tr><td>Schoolroom</td><td id="lvSchool">0</td><td>+reputation, child labor mitigated</td>
+  <td><button class="btn btn-sm btn-mill" onclick="buy('school',400)">Build (&pound;400)</button></td></tr>
+</tbody>
+</table>
+
+<p class="muted-small mb-0">Each tier of safety, ventilation, and housing maxes at 3. Schoolroom maxes at 1 (it exists or it does not).</p>
+</div>
+</div>
+
+</div>
+
+<div class="col-lg-5">
+
+<div class="card">
+<div class="card-header brass"><i class="fas fa-coins me-2"></i>Treasury</div>
+<div class="card-body">
+  <div class="kpi good"><div class="kpi-num" id="cashNum">&pound;5,000</div><div class="kpi-lbl">Cash on Hand</div></div>
+  <div class="row text-center">
+    <div class="col"><div class="kpi"><div class="kpi-num" id="lastRev">&pound;0</div><div class="kpi-lbl">Revenue Last Year</div></div></div>
+    <div class="col"><div class="kpi"><div class="kpi-num" id="lastProfit">&pound;0</div><div class="kpi-lbl">Profit Last Year</div></div></div>
+  </div>
+  <p class="muted-small mb-0 mt-2">If cash falls below zero you must take a loan or close the mill.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><i class="fas fa-cloud me-2"></i>Cotton Market</div>
+<div class="card-body">
+  <p class="mb-1">Bolt of finished cotton: <strong>&pound;<span id="priceNum">2.20</span></strong></p>
+  <p class="muted-small mb-0" id="marketNote">Prices swing with American harvests, war, and tariffs.</p>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ============ LAWS ============ -->
+<div class="tab-pane fade" id="laws">
+<div class="row g-3">
+<div class="col-lg-8">
+
+<div class="card">
+<div class="card-header brick"><i class="fas fa-gavel me-2"></i>Parliamentary Acts &amp; Reform Movements</div>
+<div class="card-body" id="lawList">
+</div>
+</div>
+
+</div>
+<div class="col-lg-4">
+
+<div class="card">
+<div class="card-header"><i class="fas fa-balance-scale me-2"></i>Legal Standing</div>
+<div class="card-body text-center">
+  <span id="legalStamp" class="legal-stamp clean">Clean Record</span>
+  <p class="mt-3 mb-1">Fines paid: <strong>&pound;<span id="finesNum">0</span></strong></p>
+  <p class="mb-0">Convictions: <strong id="convNum">0</strong></p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><i class="fas fa-info-circle me-2"></i>What Reform Looks Like</div>
+<div class="card-body muted-small">
+  <p class="mb-2">Most reform laws begin with a Royal Commission interviewing workers. Their testimony shocks Parliament. A bill passes. An inspector visits.</p>
+  <p class="mb-0">Owners who plan ahead beat the law. Owners who break it draw fines, convictions, and ruined reputations.</p>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ============ LOG ============ -->
+<div class="tab-pane fade" id="log">
+<div class="row g-3">
+<div class="col-lg-7">
+<div class="card">
+<div class="card-header"><i class="fas fa-scroll me-2"></i>Annual Events</div>
+<div class="card-body">
+<div class="scroll-log" id="eventLog">
+  <p class="muted-small mb-0">Events appear here as the years pass.</p>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col-lg-5">
+<div class="card">
+<div class="card-header brass"><i class="fas fa-book me-2"></i>Year-by-Year Ledger</div>
+<div class="card-body p-2">
+<table class="ledger">
+<thead><tr><th>Yr</th><th>Cash</th><th>Adults</th><th>Kids</th><th>Mor</th><th>Rep</th></tr></thead>
+<tbody id="ledgerBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ============ TEACHER ============ -->
+<div class="tab-pane fade" id="teacher">
+<div class="card">
+<div class="card-header brick"><i class="fas fa-chalkboard-teacher me-2"></i>Teacher's Guide</div>
+<div class="card-body">
+
+<p><strong>Activity:</strong> Industrial Revolution Factory Tycoon (1820 - 1850)<br>
+<strong>Grades:</strong> 7 - 12 &nbsp; | &nbsp; <strong>Time:</strong> 45 - 70 minutes</p>
+
+<h4>Learning Targets</h4>
+<ul>
+  <li>Trace how British factory legislation evolved from the 1819 Cotton Mills Act through the 1847 Ten Hours Act.</li>
+  <li>Weigh the trade-offs faced by mill owners between profit, reputation, and worker welfare.</li>
+  <li>Explain why labor reform happened in waves driven by Royal Commissions, journalism, and strikes.</li>
+  <li>Describe the role of child labor in early industry and the social arguments that ended it.</li>
+</ul>
+
+<h4>How the Simulation Works</h4>
+<p>Students inherit a Lancashire cotton mill in 1820 with &pound;5,000 and 20 adult workers. Each turn is one year (30 turns). Students set wages and hours, hire or fire workers, invest in machinery, ventilation, safety, schooling, and housing, and respond to events. Real laws arrive on real dates and bind the player.</p>
+
+<h4>Suggested Pacing</h4>
+<ol>
+  <li><strong>Hook (5 min):</strong> Show a primary source quote from the 1832 Sadler Committee. Ask: would you have hired children?</li>
+  <li><strong>Decade 1: 1820 - 1829 (10 min):</strong> Students set up. Watch wages, hours, child labor.</li>
+  <li><strong>Decade 2: 1830 - 1839 (10 min):</strong> 1833 Factory Act lands. Discuss the cost of compliance versus the cost of fines.</li>
+  <li><strong>Decade 3: 1840 - 1850 (10 min):</strong> Ten Hours Movement, 1847 Act, 1848 Public Health Act. Strikes peak.</li>
+  <li><strong>Debrief (15 min):</strong> Reveal endings. Compare student verdicts. Ask: who profited from reform?</li>
+</ol>
+
+<h4>Discussion Questions</h4>
+<ul>
+  <li>Did you keep child workers after 1833? Why? What was the cost-benefit?</li>
+  <li>How did your morale and reputation change when you raised wages? Was it worth it?</li>
+  <li>Whose voices are missing from this simulation? (Workers, women, abolitionists, mill children themselves.)</li>
+  <li>Compare your mill to Robert Owen's New Lanark. What did Owen do that you did or did not do?</li>
+</ul>
+
+<h4>Five Key Acts (Reference)</h4>
+<ul>
+  <li><strong>1819 Cotton Mills Act</strong> - no children under 9 in cotton mills, 12-hour limit for under-16. Weakly enforced.</li>
+  <li><strong>1825 Combination Act</strong> - workers may form unions for wage bargaining (limited).</li>
+  <li><strong>1833 Factory Act</strong> - first paid factory inspectors, ages 9-13 limited to 9 hours, 14-18 to 12 hours.</li>
+  <li><strong>1844 Factory Act</strong> - women included in 12-hour limit, machine guards required.</li>
+  <li><strong>1847 Ten Hours Act</strong> - 10-hour day for women and 13-18 year olds.</li>
+</ul>
+
+<h4>Differentiation</h4>
+<p><strong>Support:</strong> Pair students. Provide a simplified ledger. Ask only for one decade.<br>
+<strong>Extension:</strong> Have students replay aiming for the Reformer ending. Then write a letter from a worker's perspective.<br>
+<strong>Assessment:</strong> Final ending screen + 1-page reflection citing at least two laws.</p>
+
+<h4>Endings</h4>
+<ul>
+  <li><strong>Robber Baron:</strong> high cash, low reputation, ignored reform.</li>
+  <li><strong>Industrial Pioneer:</strong> balanced cash and reputation, paid the cost of compliance.</li>
+  <li><strong>Mill Reformer:</strong> low cash, high reputation, modeled on Robert Owen.</li>
+  <li><strong>Bankrupt:</strong> ran out of cash before 1850.</li>
+  <li><strong>Convicted Owner:</strong> repeat law-breaker, fined and imprisoned.</li>
+</ul>
+
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- Decision Modal -->
+<div class="modal fade modal-paper" id="decisionModal" data-bs-backdrop="static" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="decisionTitle">Decision</h5>
+      </div>
+      <div class="modal-body" id="decisionBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Ending Modal -->
+<div class="modal fade modal-paper" id="endingModal" data-bs-backdrop="static" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content" id="endingContent">
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// =================== STATE ===================
+const START_YEAR = 1820, END_YEAR = 1850;
+let state;
+
+function defaultState(){
+  return {
+    year: START_YEAR,
+    cash: 5000,
+    adultWorkers: 20,
+    childWorkers: 0,    // under 9
+    youngWorkers: 0,    // 9-13
+    wage: 8,            // pence/day for adult
+    hours: 12,
+    looms: 5,
+    engine: 1,
+    safety: 0,
+    vent: 0,
+    house: 0,
+    school: 0,
+    morale: 50,
+    reputation: 50,
+    fines: 0,
+    convictions: 0,
+    legalScore: 100,
+    bankrupt: false,
+    convicted: false,
+    lastRevenue: 0,
+    lastProfit: 0,
+    cottonPrice: 2.2,
+    events: [],
+    ledger: [],
+    pending: [],
+    awaitingDecision: false,
+    laws: lawTemplate(),
+    childLaborLegal: { under9: true, under13_9hr: false, women_12hr: false, women_10hr: false, machineGuards: false }
+  };
+}
+
+function lawTemplate(){
+  return [
+    { yr:1819, name:"Cotton Mills Act", desc:"No children under 9 in cotton mills. 12-hour limit for under-16. Weak enforcement.", active:true, broken:false },
+    { yr:1825, name:"Combination Act (revised)", desc:"Workers may join unions for wage bargaining. Strikes still curtailed.", active:false, broken:false },
+    { yr:1833, name:"Factory Act 1833", desc:"Paid inspectors. Children under 9 banned. Ages 9-13 limited to 9 hours/day.", active:false, broken:false },
+    { yr:1842, name:"Mines Act", desc:"Women and girls banned from underground work. (Mills not directly bound, but tone-setting.)", active:false, broken:false },
+    { yr:1844, name:"Factory Act 1844", desc:"Women included in 12-hour limit. Machine guards required.", active:false, broken:false },
+    { yr:1847, name:"Ten Hours Act", desc:"10-hour day for women and ages 13-18.", active:false, broken:false },
+    { yr:1848, name:"Public Health Act", desc:"Towns may regulate sanitation. Reputation hit if your mill town has cholera.", active:false, broken:false }
+  ];
+}
+
+// =================== INIT ===================
+function restartGame(){
+  state = defaultState();
+  state.events.push({y:START_YEAR, t:"law", msg:"You inherit Northbridge Mill. The 1819 Cotton Mills Act is already on the books, often ignored by smaller mills."});
+  renderAll();
+}
+restartGame();
+
+// =================== UI BIND ===================
+function updateDials(){
+  state.wage = +document.getElementById('wageSlider').value;
+  state.hours = +document.getElementById('hoursSlider').value;
+  document.getElementById('wageVal').innerText = state.wage;
+  document.getElementById('hoursVal').innerText = state.hours;
+  document.getElementById('wageHint').innerText = wageDescription(state.wage);
+}
+
+function wageDescription(w){
+  if(w<=4) return "Starvation wages. Workers will leave or strike at the first chance.";
+  if(w<=7) return "Below the local average. Workers grumble.";
+  if(w<=10) return "Typical Lancashire wage. Workers accept it without joy.";
+  if(w<=15) return "Generous. Word spreads. Other owners call you naive.";
+  return "Princely. Profitable only with strong output. Reformers cite you.";
+}
+
+// =================== ACTIONS ===================
+function spend(amount, label){
+  if(state.cash < amount){
+    flash("Insufficient cash for " + label + " (need £" + amount + ").");
+    return false;
+  }
+  state.cash -= amount;
+  return true;
+}
+function flash(msg){
+  state.events.unshift({y:state.year, t:"choice", msg:msg});
+  renderAll();
+}
+
+function hireAdult(n){ if(spend(5*n,"hiring")){ state.adultWorkers+=n; flash("Hired "+n+" adult worker"+(n>1?"s":"")+"."); }}
+function fireAdult(n){
+  n = Math.min(n, state.adultWorkers);
+  if(n<=0) return flash("No adults to dismiss.");
+  state.adultWorkers -= n;
+  state.morale = clamp(state.morale - 4*n);
+  flash("Dismissed "+n+" adult worker"+(n>1?"s":"")+". Morale falls.");
+}
+function hireChild(n){
+  if(state.year >= 1833){
+    flash("The 1833 Factory Act bans hiring children under 9. They will not pass an inspector's review.");
+    return;
+  }
+  if(spend(1*n,"hiring children")){
+    state.childWorkers += n;
+    state.reputation = clamp(state.reputation - 2*n);
+    flash("Hired "+n+" child worker"+(n>1?"s":"")+". Their parents need the wage. Reformers note it.");
+  }
+}
+function fireChild(n){
+  n = Math.min(n, state.childWorkers);
+  if(n<=0) return flash("No children employed.");
+  state.childWorkers -= n;
+  flash("Dismissed "+n+" child worker"+(n>1?"s":"")+".");
+}
+
+function buy(asset, cost){
+  const caps = { looms:99, engine:5, safety:3, vent:3, house:3, school:1 };
+  if(state[asset] >= caps[asset]){ flash("Already at maximum tier."); return; }
+  if(spend(cost, asset)){
+    state[asset]++;
+    const labels = {looms:"Power Loom", engine:"Steam Engine upgrade", safety:"Safety guard tier", vent:"Ventilation tier", house:"Housing tier", school:"Mill schoolroom"};
+    flash("Purchased: " + labels[asset] + ".");
+    if(asset==="school") state.reputation = clamp(state.reputation + 8);
+    if(asset==="house") state.morale = clamp(state.morale + 5);
+    if(asset==="vent") state.morale = clamp(state.morale + 2);
+  }
+}
+
+// =================== TURN LOOP ===================
+function endYear(){
+  if(state.bankrupt || state.convicted || state.year > END_YEAR){
+    return;
+  }
+  if(state.awaitingDecision){
+    flash("Resolve the pending decision before advancing.");
+    return;
+  }
+
+  // 1. Activate laws scheduled this year
+  applyLawsForYear(state.year);
+
+  // 2. Compute production
+  const totalLabor = state.adultWorkers + state.youngWorkers*0.7 + state.childWorkers*0.4;
+  const machineUtil = Math.min(state.looms, totalLabor/2);
+  const moraleFactor = 0.5 + state.morale/120;
+  const hoursFactor = state.hours/12;
+  const engineMult = 1 + 0.18*(state.engine-1);
+  const output = machineUtil * 14 * moraleFactor * hoursFactor * engineMult;
+
+  // 3. Cotton price drift
+  state.cottonPrice = clamp(state.cottonPrice + (Math.random()-0.5)*0.4, 1.0, 4.0, 2);
+  // historical anchors
+  if(state.year===1825) state.cottonPrice = 1.4; // Panic of 1825
+  if(state.year===1837) state.cottonPrice = 1.3; // Panic of 1837
+  if(state.year===1846) state.cottonPrice = 2.6; // Repeal of Corn Laws boom
+
+  const revenue = Math.round(output * state.cottonPrice);
+  const wagesAdult = state.adultWorkers * state.wage * 280 / 240; // pence to pounds approx
+  const wagesYoung = state.youngWorkers * state.wage * 0.5 * 280 / 240;
+  const wagesChild = state.childWorkers * state.wage * 0.3 * 280 / 240;
+  const wagesTotal = Math.round(wagesAdult + wagesYoung + wagesChild);
+  const upkeep = state.looms*15 + state.engine*40 + state.house*25 + state.school*30;
+  const profit = revenue - wagesTotal - upkeep;
+
+  state.cash += profit;
+  state.lastRevenue = revenue;
+  state.lastProfit = profit;
+
+  state.events.unshift({
+    y:state.year, t: profit>=0?"good":"crisis",
+    msg:`Books closed for ${state.year}. Revenue £${fmt(revenue)}, wages £${fmt(wagesTotal)}, upkeep £${fmt(upkeep)}, profit £${fmt(profit)}. Cotton sold at £${state.cottonPrice.toFixed(2)} per bolt.`
+  });
+
+  // 4. Morale + reputation drift
+  let mDelta = 0;
+  if(state.wage <= 4) mDelta -= 12;
+  else if(state.wage <= 7) mDelta -= 5;
+  else if(state.wage <= 10) mDelta += 0;
+  else if(state.wage <= 15) mDelta += 4;
+  else mDelta += 8;
+  if(state.hours >= 14) mDelta -= 8;
+  else if(state.hours >= 12) mDelta -= 3;
+  else if(state.hours <= 10) mDelta += 4;
+  mDelta += state.vent*2 + state.safety*2 + state.house*3 + state.school*2;
+  state.morale = clamp(state.morale + mDelta);
+
+  let rDelta = 0;
+  if(state.childWorkers > 0) rDelta -= state.year >= 1833 ? 6 : 2;
+  if(state.school) rDelta += 3;
+  if(state.house >= 2) rDelta += 2;
+  if(state.wage >= 12) rDelta += 3;
+  if(state.hours <= 10) rDelta += 3;
+  if(state.hours >= 14) rDelta -= 3;
+  state.reputation = clamp(state.reputation + rDelta);
+
+  // 5. Random events
+  rollEvents();
+
+  // 6. Check law violations
+  enforceLaws();
+
+  // 7. End-state checks
+  if(state.cash < -300){
+    state.bankrupt = true;
+    state.events.unshift({y:state.year, t:"crisis", msg:"BANKRUPT. Cash has fallen too low. The bailiffs arrive."});
+  }
+  if(state.legalScore < 20){
+    state.convicted = true;
+    state.events.unshift({y:state.year, t:"crisis", msg:"CONVICTED. Repeated factory law violations send you before the assizes."});
+  }
+
+  // 8. Save ledger row
+  state.ledger.push({
+    y: state.year,
+    cash: state.cash,
+    adults: state.adultWorkers,
+    kids: state.childWorkers + state.youngWorkers,
+    mor: state.morale,
+    rep: state.reputation
+  });
+
+  // 9. Advance year
+  state.year++;
+
+  // 10. Endings
+  if(state.bankrupt || state.convicted || state.year > END_YEAR){
+    renderAll();
+    showEnding();
+    return;
+  }
+
+  renderAll();
+}
+
+// =================== LAWS ===================
+function applyLawsForYear(yr){
+  state.laws.forEach(l=>{
+    if(l.yr===yr && !l.active){
+      l.active = true;
+      state.events.unshift({y:yr, t:"law", msg:"PARLIAMENT: " + l.name + ". " + l.desc});
+    }
+  });
+  if(yr >= 1833){ state.childLaborLegal.under9 = false; state.childLaborLegal.under13_9hr = true; }
+  if(yr >= 1844){ state.childLaborLegal.women_12hr = true; state.childLaborLegal.machineGuards = true; }
+  if(yr >= 1847){ state.childLaborLegal.women_10hr = true; }
+}
+
+function enforceLaws(){
+  let fineThisYear = 0;
+  if(state.year >= 1833 && state.childWorkers > 0){
+    const f = state.childWorkers * 30;
+    fineThisYear += f;
+    state.legalScore -= 8;
+    state.laws.find(l=>l.name==="Factory Act 1833").broken = true;
+    state.events.unshift({y:state.year, t:"crisis", msg:"FINED £"+f+". Inspector found "+state.childWorkers+" under-9 children. The 1833 Act is in force."});
+  }
+  if(state.year >= 1833 && state.youngWorkers > 0 && state.hours > 9){
+    const f = state.youngWorkers * 12;
+    fineThisYear += f;
+    state.legalScore -= 4;
+    state.laws.find(l=>l.name==="Factory Act 1833").broken = true;
+    state.events.unshift({y:state.year, t:"crisis", msg:"FINED £"+f+". 9-13 children working "+state.hours+" hours violates the 9-hour cap."});
+  }
+  if(state.year >= 1844 && state.safety < 1){
+    fineThisYear += 40;
+    state.legalScore -= 3;
+    state.laws.find(l=>l.name==="Factory Act 1844").broken = true;
+    state.events.unshift({y:state.year, t:"crisis", msg:"FINED £40. The 1844 Act requires machine guards. You have none."});
+  }
+  if(state.year >= 1847 && state.hours > 10){
+    const f = 60;
+    fineThisYear += f;
+    state.legalScore -= 5;
+    state.laws.find(l=>l.name==="Ten Hours Act").broken = true;
+    state.events.unshift({y:state.year, t:"crisis", msg:"FINED £"+f+". Hours exceed the 1847 Ten Hours Act for protected workers."});
+  }
+  if(fineThisYear > 0){
+    state.cash -= fineThisYear;
+    state.fines += fineThisYear;
+    state.convictions++;
+    state.reputation = clamp(state.reputation - 5);
+  }
+}
+
+// =================== RANDOM EVENTS ===================
+function rollEvents(){
+  const r = Math.random();
+  // Strike
+  if(state.morale < 30 && r < 0.55){
+    queueDecision({
+      title:"Strike at Northbridge",
+      body:"<p>Workers walk out. They demand higher wages and shorter hours. Coal smoke from idle boilers drifts across town.</p>",
+      options:[
+        {label:"Concede: raise wages 2 pence and shorten hours by 1.", run:()=>{ state.wage = Math.min(state.wage+2,30); state.hours = Math.max(state.hours-1,8); state.morale = clamp(state.morale+18); state.reputation = clamp(state.reputation+4); state.events.unshift({y:state.year,t:"good",msg:"You conceded. Workers return."});}},
+        {label:"Hold firm. Workers return after a week of lost output. (-£400)", run:()=>{ state.cash -= 400; state.morale = clamp(state.morale-10); state.events.unshift({y:state.year,t:"crisis",msg:"You held firm. Lost £400 and morale."});}},
+        {label:"Bring in constables to break the strike. (-£200, big rep hit)", run:()=>{ state.cash -= 200; state.morale = clamp(state.morale-20); state.reputation = clamp(state.reputation - 18); state.legalScore -= 5; state.events.unshift({y:state.year,t:"crisis",msg:"Constables broke the picket line. The Manchester Guardian named you."});}}
+      ]
+    });
+    return;
+  }
+  // Accident
+  if(r < 0.18){
+    const sev = Math.max(1, 5 - state.safety);
+    const desc = sev>=4 ? "fatal" : sev>=2 ? "serious" : "minor";
+    let mLoss = sev*4, rLoss = sev*3;
+    state.morale = clamp(state.morale - mLoss);
+    state.reputation = clamp(state.reputation - rLoss);
+    state.events.unshift({y:state.year,t:"crisis",msg:"A "+desc+" loom accident. Safety tier "+state.safety+" failed to prevent it."});
+    return;
+  }
+  // Cotton boom
+  if(r < 0.27){
+    const bonus = Math.round(200 + Math.random()*600);
+    state.cash += bonus;
+    state.events.unshift({y:state.year,t:"good",msg:"Cotton boom: speculators bid up your output. +£"+bonus+"."});
+    return;
+  }
+  // Cotton bust
+  if(r < 0.36){
+    const loss = Math.round(150 + Math.random()*400);
+    state.cash -= loss;
+    state.events.unshift({y:state.year,t:"crisis",msg:"Markets soft this year. -£"+loss+" against expectations."});
+    return;
+  }
+  // Royal Commission interview
+  if(r < 0.43 && state.year >= 1830 && state.year <= 1842){
+    queueDecision({
+      title:"Royal Commission Inquiry",
+      body:"<p>The Sadler Committee is taking testimony. An investigator asks for tour access to your mill.</p>",
+      options:[
+        {label:"Grant full access. Honest tour.", run:()=>{ state.reputation = clamp(state.reputation + (state.childWorkers===0 && state.hours<=12 ? 12 : -8)); state.events.unshift({y:state.year,t:"law",msg:"You opened the mill to the inquiry. Reputation reflects what they found."});}},
+        {label:"Tidy up first. Hide the youngest children for the day. (-£100)", run:()=>{ state.cash -= 100; state.reputation = clamp(state.reputation - 10); state.legalScore -= 4; state.events.unshift({y:state.year,t:"crisis",msg:"A worker testified anyway. The deception was reported."});}},
+        {label:"Refuse access.", run:()=>{ state.reputation = clamp(state.reputation - 15); state.events.unshift({y:state.year,t:"crisis",msg:"You refused. The committee printed your name."});}}
+      ]
+    });
+    return;
+  }
+  // Luddite raid (early)
+  if(r < 0.5 && state.year <= 1830 && state.looms >= 6){
+    const loss = Math.min(state.looms-1, 2);
+    state.looms -= loss;
+    state.events.unshift({y:state.year,t:"crisis",msg:"Luddite raid. "+loss+" power looms smashed."});
+    return;
+  }
+  // Cholera (1830s/40s)
+  if(r < 0.55 && state.year >= 1832 && state.house < 2){
+    const dead = 2 + Math.floor(Math.random()*4);
+    const lostA = Math.min(dead, state.adultWorkers);
+    state.adultWorkers -= lostA;
+    state.reputation = clamp(state.reputation - 6);
+    state.events.unshift({y:state.year,t:"crisis",msg:"Cholera in the tenements. "+lostA+" workers dead. Better housing would have helped."});
+    return;
+  }
+  // Reform speech
+  if(r < 0.62 && state.reputation >= 70){
+    const inv = Math.round(300 + Math.random()*500);
+    state.cash += inv;
+    state.events.unshift({y:state.year,t:"good",msg:"A Quaker investor, impressed by your conditions, places £"+inv+" in your hands."});
+    return;
+  }
+  // Quiet year
+  state.events.unshift({y:state.year,t:"good",msg:"A quiet year. The looms hum."});
+}
+
+// =================== DECISION QUEUE ===================
+function queueDecision(d){
+  state.pending.push(d);
+  state.awaitingDecision = true;
+  renderPending();
+  showDecisionModal(d);
+}
+
+function showDecisionModal(d){
+  document.getElementById('decisionTitle').innerText = d.title;
+  const body = document.getElementById('decisionBody');
+  body.innerHTML = d.body;
+  d.options.forEach((opt)=>{
+    const b = document.createElement('button');
+    b.className = 'choice-btn';
+    b.innerText = opt.label;
+    b.onclick = ()=>{
+      opt.run();
+      state.pending.shift();
+      state.awaitingDecision = state.pending.length>0;
+      bootstrap.Modal.getInstance(document.getElementById('decisionModal')).hide();
+      renderAll();
+      if(state.pending.length>0) showDecisionModal(state.pending[0]);
+    };
+    body.appendChild(b);
+  });
+  new bootstrap.Modal(document.getElementById('decisionModal')).show();
+}
+
+function renderPending(){
+  const box = document.getElementById('pendingBox');
+  if(state.pending.length===0){
+    box.innerHTML = '<p class="text-muted mb-0">No decisions pending. Advance the year when ready.</p>';
+    return;
+  }
+  box.innerHTML = '';
+  state.pending.forEach((p,i)=>{
+    const div = document.createElement('div');
+    div.className = 'choice-box';
+    div.innerHTML = '<h5 class="mb-2"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>'+p.title+'</h5>'+p.body+'<button class="btn-mill mt-2" onclick="reopenDecision('+i+')">Open</button>';
+    box.appendChild(div);
+  });
+}
+function reopenDecision(i){
+  if(state.pending[i]) showDecisionModal(state.pending[i]);
+}
+
+// =================== ENDING ===================
+function showEnding(){
+  let title, color, verdict;
+  if(state.bankrupt){
+    title = "BANKRUPT";
+    color = "#9c2a1c";
+    verdict = "The looms went silent in " + (state.year-1) + ". The mill was sold to satisfy creditors. Workers scattered to other towns. Your name became a cautionary tale at the Manchester Exchange.";
+  } else if(state.convicted){
+    title = "CONVICTED OWNER";
+    color = "#5a1c0e";
+    verdict = "Repeated factory law violations brought you before the magistrates. The convictions ruined your standing. You sold the mill at a loss and lived out your years in disgrace.";
+  } else {
+    const cashScore = state.cash;
+    const repScore = state.reputation;
+    if(cashScore > 12000 && repScore < 35){
+      title = "ROBBER BARON";
+      color = "#7a3327";
+      verdict = "You leave Northbridge a wealthy man. Workers do not gather at your funeral. Newspapers print obituaries that mix admiration with horror. Your fortune funds the next generation; your reputation does not.";
+    } else if(cashScore < 4000 && repScore > 70){
+      title = "MILL REFORMER";
+      color = "#3a7a3a";
+      verdict = "You spent down your fortune on schools, housing, ventilation, and short hours. Robert Owen would have shaken your hand. Parliament cited your mill in debates. Your name lasts longer than your bank balance.";
+    } else if(cashScore > 6000 && repScore > 55){
+      title = "INDUSTRIAL PIONEER";
+      color = "#b08a3e";
+      verdict = "You found the line between profit and decency. Compliance cost you, but it bought stability. The mill ran. Workers stayed. The 1847 inspector left smiling.";
+    } else if(repScore < 25){
+      title = "DESPISED OWNER";
+      color = "#5a1c0e";
+      verdict = "You survived but you are hated. Pamphleteers cite your mill as a warning. Investors avoid you. The mill runs only because no one else will buy it.";
+    } else {
+      title = "JOURNEYMAN MASTER";
+      color = "#6b5d44";
+      verdict = "You ended where you began: a mill in the middle of the pack. Not famous, not infamous. The looms still turn. The next generation may judge differently.";
+    }
+  }
+  const html = `
+    <div class="ending-screen">
+      <div class="legal-stamp ${state.legalScore>=70?'clean':''}">${state.legalScore>=70?'Clean Record':'Marred Record'}</div>
+      <h1 style="color:${color};margin-top:1rem">${title}</h1>
+      <p class="verdict">${verdict}</p>
+      <table class="stats">
+        <tr><th colspan="2">Final Standing (${state.year-1})</th></tr>
+        <tr><td>Cash</td><td>&pound;${fmt(state.cash)}</td></tr>
+        <tr><td>Reputation</td><td>${state.reputation}/100</td></tr>
+        <tr><td>Worker Morale</td><td>${state.morale}/100</td></tr>
+        <tr><td>Adult Workers</td><td>${state.adultWorkers}</td></tr>
+        <tr><td>Children Employed</td><td>${state.childWorkers + state.youngWorkers}</td></tr>
+        <tr><td>Total Fines Paid</td><td>&pound;${fmt(state.fines)}</td></tr>
+        <tr><td>Convictions</td><td>${state.convictions}</td></tr>
+        <tr><td>Mill Schoolroom</td><td>${state.school?'Yes':'No'}</td></tr>
+        <tr><td>Worker Housing Tier</td><td>${state.house}/3</td></tr>
+      </table>
+      <button class="btn-brass mt-4" onclick="restartGame();bootstrap.Modal.getInstance(document.getElementById('endingModal')).hide()"><i class="fas fa-undo me-1"></i>Play Again</button>
+    </div>`;
+  document.getElementById('endingContent').innerHTML = html;
+  new bootstrap.Modal(document.getElementById('endingModal')).show();
+}
+
+// =================== RENDER ===================
+function fmt(n){ return Math.round(n).toLocaleString('en-GB'); }
+function clamp(v, lo=0, hi=100, dp=null){
+  let x = Math.max(lo, Math.min(hi, v));
+  if(dp!==null) x = +x.toFixed(dp);
+  return x;
+}
+
+function renderAll(){
+  document.getElementById('yearPill').innerText = "YEAR " + Math.min(state.year, END_YEAR);
+  document.getElementById('endYearBtn').disabled = state.bankrupt || state.convicted || state.year > END_YEAR || state.awaitingDecision;
+  if(state.year > END_YEAR && !state.bankrupt && !state.convicted) document.getElementById('turnNote').innerText = "Thirty years are done. View your verdict.";
+
+  // Workforce
+  document.getElementById('wAdult').innerText = state.adultWorkers;
+  document.getElementById('wChild').innerText = state.childWorkers;
+  document.getElementById('wYoung').innerText = state.youngWorkers;
+  document.getElementById('hireChildBtn').disabled = state.year >= 1833;
+  document.getElementById('hireChild5Btn').disabled = state.year >= 1833;
+  document.getElementById('laborLegality').innerText = state.year >= 1833
+    ? "Children under 9 are banned (1833 Factory Act). Hiring buttons disabled."
+    : "Child labor is legal but harsh. Reform laws may restrict this.";
+
+  // Capital
+  document.getElementById('lvLooms').innerText = state.looms;
+  document.getElementById('lvEngine').innerText = state.engine;
+  document.getElementById('lvSafety').innerText = state.safety;
+  document.getElementById('lvVent').innerText = state.vent;
+  document.getElementById('lvHouse').innerText = state.house;
+  document.getElementById('lvSchool').innerText = state.school;
+
+  // Treasury
+  document.getElementById('cashNum').innerText = "£" + fmt(state.cash);
+  document.getElementById('lastRev').innerText = "£" + fmt(state.lastRevenue);
+  document.getElementById('lastProfit').innerText = (state.lastProfit<0?"-£":"£") + fmt(Math.abs(state.lastProfit));
+  document.getElementById('priceNum').innerText = state.cottonPrice.toFixed(2);
+
+  // Bars
+  document.getElementById('moraleNum').innerText = state.morale + "%";
+  const mb = document.getElementById('moraleBar');
+  mb.style.width = state.morale + "%";
+  mb.className = state.morale>=66?"b-good":state.morale>=33?"b-warn":"b-bad";
+  document.getElementById('repNum').innerText = state.reputation + "%";
+  const rb = document.getElementById('repBar');
+  rb.style.width = state.reputation + "%";
+  rb.className = state.reputation>=66?"b-good":state.reputation>=33?"b-warn":"b-bad";
+
+  // KPI panel
+  const kp = document.getElementById('kpiPanel');
+  kp.innerHTML = `
+    <div class="kpi good"><div class="kpi-num">£${fmt(state.cash)}</div><div class="kpi-lbl">Treasury</div></div>
+    <div class="row g-1">
+      <div class="col"><div class="kpi"><div class="kpi-num">${state.adultWorkers}</div><div class="kpi-lbl">Adults</div></div></div>
+      <div class="col"><div class="kpi flag"><div class="kpi-num">${state.childWorkers+state.youngWorkers}</div><div class="kpi-lbl">Children</div></div></div>
+    </div>
+    <div class="row g-1">
+      <div class="col"><div class="kpi"><div class="kpi-num">${state.morale}%</div><div class="kpi-lbl">Morale</div></div></div>
+      <div class="col"><div class="kpi"><div class="kpi-num">${state.reputation}%</div><div class="kpi-lbl">Reputation</div></div></div>
+    </div>
+    <div class="row g-1">
+      <div class="col"><div class="kpi"><div class="kpi-num">${state.looms}</div><div class="kpi-lbl">Looms</div></div></div>
+      <div class="col"><div class="kpi"><div class="kpi-num">£${state.cottonPrice.toFixed(2)}</div><div class="kpi-lbl">Cotton</div></div></div>
+    </div>`;
+
+  // Quick stats below narrative
+  const qs = document.getElementById('quickStats');
+  qs.innerHTML = `
+    <div class="col-6 col-md-3"><div class="kpi"><div class="kpi-num">${state.hours}h</div><div class="kpi-lbl">Daily Hours</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi"><div class="kpi-num">${state.wage}p</div><div class="kpi-lbl">Adult Wage</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi"><div class="kpi-num">${state.safety}/3</div><div class="kpi-lbl">Safety</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi"><div class="kpi-num">${state.vent}/3</div><div class="kpi-lbl">Ventilation</div></div></div>`;
+  document.getElementById('seasonNarrative').innerText = seasonNarrative();
+
+  // Pending
+  renderPending();
+
+  // Laws
+  renderLaws();
+
+  // Legal
+  document.getElementById('finesNum').innerText = fmt(state.fines);
+  document.getElementById('convNum').innerText = state.convictions;
+  const stamp = document.getElementById('legalStamp');
+  if(state.legalScore >= 80){ stamp.className = "legal-stamp clean"; stamp.innerText = "Clean Record"; }
+  else if(state.legalScore >= 50){ stamp.className = "legal-stamp"; stamp.innerText = "Cited"; }
+  else { stamp.className = "legal-stamp"; stamp.innerText = "Habitual Offender"; }
+
+  // Event log
+  const log = document.getElementById('eventLog');
+  log.innerHTML = state.events.length===0
+    ? '<p class="muted-small mb-0">Events appear here as the years pass.</p>'
+    : state.events.slice(0,80).map(e=>`<div class="event ${e.t}"><span class="ev-year">${e.y}</span>${e.msg}</div>`).join('');
+
+  // Ledger
+  const lb = document.getElementById('ledgerBody');
+  lb.innerHTML = state.ledger.slice(-12).map(r=>`<tr><td>${r.y}</td><td>£${fmt(r.cash)}</td><td>${r.adults}</td><td>${r.kids}</td><td>${r.mor}</td><td>${r.rep}</td></tr>`).join('');
+
+  // Slider sync
+  document.getElementById('wageSlider').value = state.wage;
+  document.getElementById('hoursSlider').value = state.hours;
+  document.getElementById('wageVal').innerText = state.wage;
+  document.getElementById('hoursVal').innerText = state.hours;
+}
+
+function seasonNarrative(){
+  if(state.year > END_YEAR) return "1850. Three decades behind the loom. The verdict awaits.";
+  const decade = Math.floor(state.year/10)*10;
+  const decadeLine = {
+    1820:"The 1820s. Steam is winning. Hand weavers riot. American cotton floods the docks.",
+    1830:"The 1830s. Reform Bill in Parliament. Sadler Committee testimonies horrify the public.",
+    1840:"The 1840s. Hungry decade. Chartists march. The Ten Hours Movement gains ground.",
+    1850:"1850. The age of grand exhibitions. The mill stands or it does not."
+  }[decade] || "";
+  return decadeLine + " Cotton at £" + state.cottonPrice.toFixed(2) + " per bolt. Treasury £" + fmt(state.cash) + ".";
+}
+
+function renderLaws(){
+  const list = document.getElementById('lawList');
+  list.innerHTML = state.laws.map(l=>{
+    const status = !l.active ? '<span class="muted-small">PENDING (year '+l.yr+')</span>'
+      : l.broken ? '<span class="legal-stamp">VIOLATED</span>'
+      : '<span class="legal-stamp clean">COMPLIANT</span>';
+    return `<div class="law-card ${l.broken?'broken':''}"><span class="law-yr">${l.yr}</span> &nbsp; <strong>${l.name}</strong> &nbsp; ${status}<div class="muted-small mt-1">${l.desc}</div></div>`;
+  }).join('');
+}
+
+renderAll();
+</script>
+</body>
+</html>
